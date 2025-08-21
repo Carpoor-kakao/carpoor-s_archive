@@ -3,13 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>우리 랭킹</title>
+  <title>카푸어's 아카이브</title>
   <style>
-    :root { --bg:#0b1020; --panel:#0f1630; --text:#e8ecf8; --muted:#9fb2d0; --brand:#6aa1ff; --accent:#7cf7d4; --warn:#ffd166; }
+    :root { --bg:#000; --panel:#0f1630; --text:#e8ecf8; --muted:#9fb2d0; --brand:#6aa1ff; --accent:#7cf7d4; --warn:#ffd166; }
     *{box-sizing:border-box}
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;background:linear-gradient(180deg,#0b1020,#0a0e1b 50%,#0b1020);color:var(--text)}
-    header{position:sticky;top:0;z-index:5;background:rgba(11,16,32,.7);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.08)}
-    .wrap{max-width:980px;margin:0 auto;padding:16px}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;background:#000;color:var(--text);min-height:100dvh}
+
+    header{position:sticky;top:0;z-index:5;background:rgba(0,0,0,.85);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:12px}
+    header img{height:40px;width:auto;}
+    .wrap{max-width:980px;margin:0 auto;padding:16px;flex:1}
     h1{margin:0;font-size:24px;letter-spacing:.2px}
     .subtitle{color:var(--muted);font-size:14px}
     .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:10px}
@@ -18,10 +20,9 @@
     .btn:hover{background:#131b3a}
     .btn.primary{background:linear-gradient(180deg,#6aa1ff,#4f86ff);border-color:#3d6fe3}
     .grid{display:grid;grid-template-columns:1fr;gap:16px;margin-top:16px}
-    @media (min-width:720px){.grid{grid-template-columns: 3fr 2fr}}
-    .card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px}
+    .card{background:rgba(11,16,32,.6);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px}
     .card h3{margin:0 0 8px 0}
-    select, input[type="text"]{background:#0e152f;color:var(--text);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px;min-width:180px}
+    select, input[type="text"], textarea{background:#0e152f;color:var(--text);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px;min-width:160px}
     table{width:100%;border-collapse:separate;border-spacing:0 8px}
     th{font-size:12px;color:var(--muted);text-align:left;padding:0 12px}
     td{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);padding:12px;border-left:0;border-right:0}
@@ -33,19 +34,29 @@
     .bronze{background:linear-gradient(180deg,#e6b089,#d79562);color:#4a2d15}
     .muted{color:var(--muted)}
     .footer{color:var(--muted);font-size:12px;margin-top:16px}
+
+    /* profile drawer */
+    .drawer{position:fixed;right:16px;bottom:16px;max-width:360px;width:calc(100% - 32px);transform:translateY(16px);opacity:0;pointer-events:none;transition:opacity .2s, transform .2s;z-index:20}
+    .drawer.show{opacity:1;transform:translateY(0);pointer-events:auto}
+    .drawer .card{background:rgba(13,20,43,.92);backdrop-filter:blur(8px)}
+    .avatar{width:52px;height:52px;border-radius:12px;background:#18224a;border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-weight:700}
+
+    /* request modal */
     dialog{border:1px solid rgba(255,255,255,.15);border-radius:16px;background:#0d142b;color:var(--text);padding:0}
     .modal-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.1)}
     .modal-body{padding:16px}
     .qr-box{display:flex;justify-content:center;padding:16px;border-radius:12px;background:rgba(255,255,255,.04)}
     .copy{display:flex;gap:8px;margin-top:10px}
     .tag{font-size:12px;color:var(--muted);border:1px solid rgba(255,255,255,.15);padding:4px 8px;border-radius:999px}
+    .req-item{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px 10px;margin-bottom:8px;font-size:14px}
   </style>
 </head>
 <body>
   <header>
+    <img id="logoImg" src="" alt="logo" style="display:none">
     <div class="wrap">
-      <h1>우리 랭킹</h1>
-      <div class="subtitle">친구들과 항목별 점수를 깔끔하게 비교하기</div>
+      <h1>카푸어's 아카이브</h1>
+      <div class="subtitle">친구들의 키/몸무게 등 항목별 정보를 아카이브하고 비교하기</div>
       <div class="row">
         <label class="pill">
           항목
@@ -54,8 +65,8 @@
         <label class="pill">
           정렬
           <select id="sortSelect" aria-label="정렬 선택">
-            <option value="desc">점수 높은 순</option>
-            <option value="asc">점수 낮은 순</option>
+            <option value="desc">값 큰 순</option>
+            <option value="asc">값 작은 순</option>
           </select>
         </label>
         <label class="pill">
@@ -64,9 +75,22 @@
         </label>
         <button class="btn" id="copyLinkBtn">링크 복사</button>
         <button class="btn primary" id="qrBtn">QR 코드</button>
+        <button class="btn" id="reqBtn">신규 요청</button>
       </div>
     </div>
+      </div>
   </header>
+
+  <!-- Admin tools (hidden by default; add ?admin=1 to URL to show) -->
+  <div id="adminTools" style="display:none;position:fixed;right:16px;top:72px;z-index:50">
+    <div class="card" style="background:rgba(0,0,0,.9)">
+      <div style="font-weight:700;margin-bottom:6px">소유자 전용</div>
+      <input id="logoFile" type="file" accept="image/*">
+      <div class="muted" style="font-size:12px;margin-top:6px">이미지 선택 → 아래 버튼으로 <b>자급자족 단일 파일</b> 생성</div>
+      <button class="btn" id="exportSingle" style="margin-top:8px">단일 HTML로 저장</button>
+    </div>
+  </div>
+
 
   <main class="wrap grid">
     <section class="card" id="rankCard">
@@ -76,7 +100,7 @@
           <tr>
             <th>순위</th>
             <th>이름</th>
-            <th>점수</th>
+            <th>값</th>
             <th>업데이트</th>
           </tr>
         </thead>
@@ -84,23 +108,43 @@
       </table>
       <div class="footer">
         URL 매개변수 <code>?cat=슬러그</code> 로 특정 항목을 바로 열 수 있어요.
-        예: <span class="tag">?cat=push-ups</span>
+        예: <span class="tag">?cat=height</span>
       </div>
     </section>
 
-    <aside class="card">
-      <h3>빠른 편집</h3>
-      <p class="muted">아래의 <b>DATA</b> 섹션만 수정하면 누구나 바로 사용 가능해요.</p>
-      <ol class="muted">
-        <li>코드 하단의 <b>DATA</b>를 여러분의 친구/항목으로 바꾸세요.</li>
-        <li>원하는 곳에 업로드(예: GitHub Pages, Netlify).</li>
-        <li>상단의 <b>QR 코드</b> 버튼으로 접속용 QR 생성.</li>
-      </ol>
-      <div style="height:12px"></div>
-      <div class="tag">팁</div>
-      <p class="muted">파일로 열 때는 QR이 <code>file://</code> 주소일 수 있어요. 배포 후 다시 생성하세요.</p>
-    </aside>
+    <section class="card" id="reqCard">
+      <h3>요청 목록</h3>
+      <div id="reqList"></div>
+    </section>
   </main>
+
+  <div class="drawer" id="profileDrawer">
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:flex-start">
+        <div style="display:flex;gap:12px;align-items:center">
+          <div class="avatar" id="pAvatar">👤</div>
+          <div>
+            <div style="font-weight:700" id="pName">이름</div>
+            <div class="muted" id="pSubtitle">프로필 정보 대기중</div>
+          </div>
+        </div>
+        <button class="btn" id="pClose">닫기</button>
+      </div>
+      <div style="margin-top:12px" id="pBody" class="muted"></div>
+    </div>
+  </div>
+
+  <!-- 요청 모달 -->
+  <dialog id="reqModal">
+    <div class="modal-head">
+      <strong>신규 요청</strong>
+      <button class="btn" id="closeReq">닫기</button>
+    </div>
+    <div class="modal-body">
+      <textarea id="reqText" rows="4" style="width:100%" placeholder="요청 내용을 입력하세요..."></textarea>
+      <button class="btn primary" style="margin-top:10px" id="submitReq">등록</button>
+    </div>
+  </dialog>
 
   <dialog id="qrModal">
     <div class="modal-head">
@@ -118,38 +162,21 @@
 
   <script>
     /**
-     * ====== DATA (이 부분만 바꿔서 쓰세요) ======
-     * people: 친구 이름 목록
-     * categories: 항목별 점수(숫자). updated는 "YYYY-MM-DD" 권장.
+     * ====== DATA ======
      */
     const DATA = {
       people: ["민수", "지연", "수현", "태호", "루카"],
       categories: [
-        {
-          id: "push-ups",
-          name: "팔굽혀펴기(1분)",
-          scores: { "민수": 45, "지연": 38, "수현": 52, "태호": 41, "루카": 42 },
-          updated: { "민수": "2025-08-10", "지연": "2025-08-12", "수현": "2025-08-15", "태호": "2025-08-11", "루카": "2025-08-09" }
-        },
-        {
-          id: "mariokart",
-          name: "마리오카트(평균 순위)",
-          desc: "낮을수록 우수",
-          lowerIsBetter: true,
-          scores: { "민수": 2.3, "지연": 1.9, "수현": 3.7, "태호": 2.8, "루카": 4.1 },
-          updated: { "민수": "2025-07-28", "지연": "2025-07-28", "수현": "2025-07-29", "태호": "2025-07-30", "루카": "2025-07-25" }
-        },
-        {
-          id: "coding-quiz",
-          name: "코딩 퀴즈(점수)",
-          scores: { "민수": 88, "지연": 94, "수현": 82, "태호": 90, "루카": 77 },
-          updated: { "민수": "2025-08-01", "지연": "2025-08-03", "수현": "2025-08-02", "태호": "2025-08-04", "루카": "2025-08-01" }
-        }
-      ]
+        { id: "height", name: "키", unit: "cm", scores: {}, updated: {} },
+        { id: "weight", name: "몸무게", unit: "kg", scores: {}, updated: {} }
+      ],
+      profiles: {},
+      LOGO_DATA_URL: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAasAAAGpCAYAAAAz2RlmAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAKCSURBVHhe7cExAQAAAMKg9U9tDQ+gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" // 여기에 dataURL을 넣으면 로고가 항상 표시됩니다.
     };
-    // ====== END DATA ======
 
-    // Helpers
+    const REQ_KEY = "req_list";
+    let reqs = JSON.parse(localStorage.getItem(REQ_KEY)||"[]");
+
     const $ = (sel) => document.querySelector(sel);
     const fmtDate = (d) => d || "-";
 
@@ -159,8 +186,14 @@
     const rankBody = $("#rankBody");
     const catTitle = $("#catTitle");
 
+    const drawer = $("#profileDrawer");
+    const pName = $("#pName");
+    const pSubtitle = $("#pSubtitle");
+    const pBody = $("#pBody");
+    const pAvatar = $("#pAvatar");
+
     function populateCategoryOptions(){
-      categorySelect.innerHTML = DATA.categories.map(c=>`<option value="${c.id}">${c.name}</option>`).join("");
+      categorySelect.innerHTML = DATA.categories.map(c=>`<option value="${c.id}">${c.name}${c.unit?` (${c.unit})`:''}</option>`).join("");
     }
 
     function getCurrentCat(){
@@ -178,20 +211,25 @@
     function render(){
       const cat = getCurrentCat();
       if(!cat) return;
-      catTitle.textContent = cat.name;
+      catTitle.textContent = cat.name + (cat.unit?` (${cat.unit})`:"");
       categorySelect.value = cat.id;
 
       const rows = DATA.people.map(name=>({
         name,
-        score: Number(cat.scores[name] ?? NaN),
+        value: (cat.scores[name]!==undefined && cat.scores[name]!==null) ? Number(cat.scores[name]) : null,
         updated: cat.updated?.[name] || ""
-      })).filter(r=>!isNaN(r.score));
+      }));
 
       const q = searchInput.value.trim().toLowerCase();
       const filtered = q? rows.filter(r=>r.name.toLowerCase().includes(q)) : rows;
 
-      const dir = (cat.lowerIsBetter? (sortSelect.value==="desc"? "asc":"asc") : sortSelect.value);
-      filtered.sort((a,b)=> dir==="asc"? a.score-b.score : b.score-a.score || a.name.localeCompare(b.name));
+      const dir = sortSelect.value;
+      filtered.sort((a,b)=>{
+        const av = (a.value==null? Number.NEGATIVE_INFINITY : a.value);
+        const bv = (b.value==null? Number.NEGATIVE_INFINITY : b.value);
+        const cmp = (dir==="asc"? av-bv : bv-av);
+        return cmp!==0? cmp : a.name.localeCompare(b.name);
+      });
 
       rankBody.innerHTML = filtered.map((r, idx)=>{
         const i = idx+1;
@@ -199,20 +237,90 @@
         if(i===1) medal = `<span class="medal gold">1</span>`;
         else if(i===2) medal = `<span class="medal silver">2</span>`;
         else if(i===3) medal = `<span class="medal bronze">3</span>`;
+        const valText = (r.value==null? '-' : (Number.isInteger(r.value)? r.value : r.value.toFixed(2)));
         return `<tr>
           <td>${medal}</td>
-          <td>${r.name}</td>
-          <td>${Number.isInteger(r.score)? r.score : r.score.toFixed(2)}</td>
+          <td><button class="btn" data-name="${r.name}" style="padding:6px 10px">${r.name}</button></td>
+          <td>${valText}</td>
           <td class="muted">${fmtDate(r.updated)}</td>
         </tr>`
       }).join("");
+
+      rankBody.querySelectorAll('button[data-name]').forEach(btn=>{
+        btn.addEventListener('click', ()=> openProfile(btn.dataset.name));
+      });
+
+      renderReqs();
     }
 
-    categorySelect.addEventListener('change', e=>{ setCatInUrl(e.target.value); render(); });
-    sortSelect.addEventListener('change', render);
-    searchInput.addEventListener('input', render);
+    function openProfile(name){
+      const prof = DATA.profiles?.[name];
+      pName.textContent = name;
+      pSubtitle.textContent = prof?.subtitle || '프로필 정보 대기중';
+      pBody.textContent = prof?.bio || '';
+      pAvatar.textContent = (name?.[0]||'👤');
+      drawer.classList.add('show');
+    }
 
-    // Share & QR
+    document.getElementById('pClose').addEventListener('click', ()=> drawer.classList.remove('show'));
+
+    // 요청 기능
+    const reqBtn = document.getElementById('reqBtn');
+    const reqModal = document.getElementById('reqModal');
+    const closeReq = document.getElementById('closeReq');
+    const reqText = document.getElementById('reqText');
+    const submitReq = document.getElementById('submitReq');
+    const reqList = document.getElementById('reqList');
+
+    reqBtn.addEventListener('click', ()=>{ reqText.value=""; reqModal.showModal(); });
+    closeReq.addEventListener('click', ()=> reqModal.close());
+    submitReq.addEventListener('click', ()=>{
+      const val = reqText.value.trim();
+      if(!val) return;
+      reqs.unshift({text:val, date:new Date().toLocaleString()});
+      localStorage.setItem(REQ_KEY, JSON.stringify(reqs));
+      reqModal.close();
+      renderReqs();
+    });
+
+    function renderReqs(){
+      reqList.innerHTML = reqs.map(r=>`<div class="req-item">${r.text}<div class="muted" style="font-size:12px">${r.date}</div></div>`).join("");
+    }
+
+    // 로고 표시
+    const logoEl = document.getElementById('logoImg');
+    function applyLogo(){
+      if(DATA.LOGO_DATA_URL){ logoEl.src = DATA.LOGO_DATA_URL; logoEl.style.display='block'; }
+      else { logoEl.style.display='none'; }
+    }
+    applyLogo();
+
+    // Admin tools: ?admin=1 일 때만 표시, 선택한 이미지를 dataURL로 변환 후 단일 파일 저장
+    (function(){
+      const url = new URL(location.href);
+      if(url.searchParams.get('admin')==='1'){
+        document.getElementById('adminTools').style.display='block';
+      }
+      const logoInput = document.getElementById('logoFile');
+      const exportBtn = document.getElementById('exportSingle');
+      exportBtn?.addEventListener('click', async ()=>{
+        if(!logoInput.files || !logoInput.files[0]){ alert('로고 이미지를 선택하세요.'); return; }
+        const file = logoInput.files[0];
+        const dataUrl = await new Promise((res)=>{ const r=new FileReader(); r.onload=e=>res(e.target.result); r.readAsDataURL(file); });
+        // 현재 문서 HTML을 문자열로 복제 후, DATA.LOGO_DATA_URL 값을 dataUrl로 대체
+        let html = document.documentElement.outerHTML;
+        html = html.replace(/LOGO_DATA_URL: \"[^\"]*\"/, `LOGO_DATA_URL: \"${dataUrl}\"`);
+        // 다운로드
+        const blob = new Blob(["<!DOCTYPE html>
+"+html], {type:'text/html'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'kapoor-archive.single.html';
+        a.click();
+      });
+    })();
+
+    // QR 코드 & 복사
     const qrBtn = document.getElementById('qrBtn');
     const qrModal = document.getElementById('qrModal');
     const closeQr = document.getElementById('closeQr');
@@ -222,44 +330,4 @@
     const copyLinkBtn = document.getElementById('copyLinkBtn');
 
     function currentUrl(){ return window.location.href; }
-    async function copy(text){ try{ await navigator.clipboard.writeText(text); toast('복사됨!'); }catch{ alert('복사 실패. 수동으로 복사하세요.'); } }
-
-    function toast(msg){
-      const el = document.createElement('div');
-      el.textContent = msg;
-      el.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:#121a39;color:#fff;border:1px solid rgba(255,255,255,.2);padding:10px 14px;border-radius:10px;z-index:9999;opacity:0;transition:opacity .2s';
-      document.body.appendChild(el);
-      requestAnimationFrame(()=>{ el.style.opacity = 1; });
-      setTimeout(()=>{ el.style.opacity=0; setTimeout(()=>el.remove(),200); }, 1200);
-    }
-
-    qrBtn.addEventListener('click', ()=>{
-      shareUrl.value = currentUrl();
-      qrcodeBox.innerHTML = '';
-      new QRCode(qrcodeBox, { text: currentUrl(), width: 220, height: 220, correctLevel: QRCode.CorrectLevel.M });
-      qrModal.showModal();
-    });
-    closeQr.addEventListener('click', ()=> qrModal.close());
-    copyFromModal.addEventListener('click', ()=> copy(shareUrl.value));
-    copyLinkBtn.addEventListener('click', ()=> copy(currentUrl()));
-
-    // init
-    populateCategoryOptions();
-    render();
-  </script>
-
-  <!-- qrcodejs (davidshimjs) - MIT License: https://github.com/davidshimjs/qrcodejs -->
-  <script>
-  // qrcode.min.js (inlined)
-  // (c) davidshimjs - MIT License
-  !function(o){function t(o){this.mode=s.MODE_8BIT_BYTE,this.data=o,this.parsedData=[];for(var t=0,e=this.data.length;t<e;t++){var i=[],r=this.data.charCodeAt(t);r>65536?(i[0]=240|(1835008&r)>>>18,i[1]=128|(258048&r)>>>12,i[2]=128|(4032&r)>>>6,i[3]=128|63&r):r>2048?(i[0]=224|(61440&r)>>>12,i[1]=128|(4032&r)>>>6,i[2]=128|63&r):r>128?(i[0]=192|(1984&r)>>>6,i[1]=128|63&r):i[0]=r,this.parsedData.push(i)}this.parsedData=Array.prototype.concat.apply([],this.parsedData),this.parsedData.length!=this.data.length&&(this.parsedData.unshift(191),this.parsedData.unshift(187),this.parsedData.unshift(239))}function e(o,t){this.typeNumber=o,this.errorCorrectLevel=t,this.modules=null,this.moduleCount=0,this.dataCache=null,this.dataList=[]}function i(o,t){if(void 0==o.length)throw new Error(o.length+"/"+t);for(var e=0;e<o.length&&0==o[e];)e++;this.num=Array(o.length-e+t);for(var i=0;i<o.length-e;i++)this.num[i]=o[i+e]}function r(o,t){this.totalCount=o,this.dataCount=t}function n(){this.buffer=[],this.length=0}function h(){return"undefined"!=typeof CanvasRenderingContext2D}function u(){var o=!1,t=navigator.userAgent;return/android/i.test(t)&&(o=!0,RegExp("android\\.([0-9]+)\\." ).exec(t)&&RegExp.$1<2),o}function d(o,t){for(var e=1,r=function(o){for(var t=0;t<o.length&&0==o[t];)t++;for(var e=Array(o.length-t),i=0;i<e.length;i++)e[i]=o[i+t];return e}(o),n=r.length;n<=t;n++)r.unshift(0);return r}var s={};s.PAD0=236,s.PAD1=17,s.Mode={MODE_NUMBER:1,MODE_ALPHA_NUM:2,MODE_8BIT_BYTE:4,MODE_KANJI:8},s.ErrorCorrectLevel={L:1,M:0,Q:3,H:2};var a={PATTERN_POSITION_TABLE:[[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],[6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],[6,34,62,90],[6,28,50,72,94],[6,26,50,74,98],[6,30,54,78,102],[6,28,54,80,106],[6,32,58,84,110],[6,30,58,86,114],[6,34,62,90,118],[6,26,50,74,98,122],[6,30,54,78,102,126],[6,26,52,78,104,130],[6,30,56,82,108,134],[6,34,60,86,112,138],[6,30,58,86,114,142],[6,34,62,90,118,146],[6,30,54,78,102,126,150],[6,24,50,76,102,128,154],[6,28,54,80,106,132,158],[6,32,58,84,110,136,162],[6,26,54,82,110,138,166],[6,30,58,86,114,142,170]],G15:1335,G18:7973,G15_MASK:21522,getBCHTypeInfo:function(o){for(var t=o<<10;this.getBCHDigit(t)-this.getBCHDigit(this.G15)>=0;)t^=this.G15<<this.getBCHDigit(t)-this.getBCHDigit(this.G15);return(o<<10|t)^this.G15_MASK},getBCHTypeNumber:function(o){for(var t=o<<12;this.getBCHDigit(t)-this.getBCHDigit(this.G18)>=0;)t^=this.G18<<this.getBCHDigit(t)-this.getBCHDigit(this.G18);return o<<12|t},getBCHDigit:function(o){for(var t=0;0!=o;)t++,o>>>=1;return t},getPatternPosition:function(o){return this.PATTERN_POSITION_TABLE[o-1]},getMask:function(o,t,e){switch(o){case 0:return(t+e)%2==0;case 1:return t%2==0;case 2:return e%3==0;case 3:return(t+e)%3==0;case 4:return(Math.floor(t/2)+Math.floor(e/3))%2==0;case 5:return t*e%2+ t*e%3==0;case 6:return(t*e%2+ t*e%3)%2==0;case 7:return(t*e%3+Math.floor(t/2)+Math.floor(e/3))%2==0;default:throw new Error("bad maskPattern:")+o}},getErrorCorrectPolynomial:function(o){for(var t=new i([1],0),e=0;e<o;e++)t=t.multiply(new i([1,Math.pow(2,e)],0));return t},getLengthInBits:function(o,t){if(t>=1&&t<10)switch(o){case s.Mode.MODE_NUMBER:return 10;case s.Mode.MODE_ALPHA_NUM:return 9;case s.Mode.MODE_8BIT_BYTE:return 8;case s.Mode.MODE_KANJI:return 8;default:throw new Error("mode:")+o}else if(t<27)switch(o){case s.Mode.MODE_NUMBER:return 12;case s.Mode.MODE_ALPHA_NUM:return 11;case s.Mode.MODE_8BIT_BYTE:return 16;case s.Mode.MODE_KANJI:return 10;default:throw new Error("mode:")+o}else{if(!(t<41))throw new Error("type:")+t;switch(o){case s.Mode.MODE_NUMBER:return 14;case s.Mode.MODE_ALPHA_NUM:return 13;case s.Mode.MODE_8BIT_BYTE:return 16;case s.Mode.MODE_KANJI:return 12;default:throw new Error("mode:")+o}}},getLostPoint:function(o){for(var t=o.getModuleCount(),e=0,i=0;i<t;i++)for(var r=0;r<t;r++){for(var n=0,h=o.isDark(i,r),u=-1;u<=1;u++)if(!(i+u<0||t<=i+u))for(var d=-1;d<=1;d++)r+d<0||t<=r+d||0==u&&0==d||h==o.isDark(i+u,r+d)&&n++;n>5&&(e+=3+n-5)}for(i=0;i<t-1;i++)for(r=0;r<t-1;r++){var a=0;o.isDark(i,r)&&a++,o.isDark(i+1,r)&&a++,o.isDark(i,r+1)&&a++,o.isDark(i+1,r+1)&&a++,(0==a||4==a)&&(e+=3)}for(i=0;i<t;i++)for(r=0;r<t-6;r++)o.isDark(i,r)&&!o.isDark(i,r+1)&&o.isDark(i,r+2)&&o.isDark(i,r+3)&&o.isDark(i,r+4)&&!o.isDark(i,r+5)&&o.isDark(i,r+6)&&(e+=40);for(r=0;r<t;r++)for(i=0;i<t-6;i++)o.isDark(i,r)&&!o.isDark(i+1,r)&&o.isDark(i+2,r)&&o.isDark(i+3,r)&&o.isDark(i+4,r)&&!o.isDark(i+5,r)&&o.isDark(i+6,r)&&(e+=40);var l=0;for(r=0;r<t;r++)for(i=0;i<t;i++)o.isDark(i,r)&&l++;return e+=10*(Math.abs(100*l/t/t-50)/5)}},l=function(o){var t=o,e=0,i=0,r=0,n="";return{writeByte:function(o){for(t<<=8,t|=255&o,e+=8;e>=6;)n+="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:"[63&t>>>e-6],e-=6},write:function(o){for(var t=0;t<o.length;t++)this.writeByte(o.charCodeAt(t))},flush:function(){if(e>0&&(n+="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:"[63&t<<6-e],e=0),n.length%4==1&&(n+="==="),n.length%4==2&&(n+="=="),n.length%4==3&&(n+="="),r++,i++)return n}}};
-  function f(o,t){this._el=o,this._htOption=t}
-  f.prototype.draw=function(o){var t=this._el,e=this._htOption;this._el&&(this._el.innerHTML="");var i=document.createElement("canvas");i.width=e.width,i.height=e.height;var r=i.getContext("2d");o.modules.forEach(function(o,t){o.forEach(function(o,n){r.fillStyle=o?"#000":"#fff";var h=Math.floor(e.width/o.length);r.fillRect(n*h,t*h,h,h)})}),t.appendChild(i)};
-  function c(o,t){this._el=o,this._htOption=t,this._oQRCode=null,this._oDrawing=new f(this._el,this._htOption),this.makeCode(this._htOption.text)}
-  c.prototype.makeCode=function(o){this._oQRCode=function(o,t){var i=new e(4,t);i.addData(o),i.make();return i}(o,this._htOption.correctLevel),this._oDrawing.draw(this._oQRCode)};
-  var p={L:1,M:0,Q:3,H:2};
-  function QRCode(o,t){if(this._htOption={width:256,height:256,text:"",correctLevel:p.H},"string"==typeof o&&(o=document.getElementById(o)),this._el=o,void 0!==t)for(var e in t)this._htOption[e]=t[e];this._oQRCode=null,this._oDrawing=null,this._htOption.useSVG?console.warn('SVG 렌더링은 미포함(캔버스 사용)'):null,c.call(this,o,this._htOption)}
-  QRCode.CorrectLevel=p;window.QRCode=QRCode;
-  </script>
-</body>
-</html>
+    async function copy(text){ try{ await navigator.clipboard.writeText(text); toast('복사됨!'); }catch{ alert('복사
