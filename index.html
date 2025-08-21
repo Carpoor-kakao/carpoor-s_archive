@@ -1,333 +1,480 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>카푸어's 아카이브</title>
-  <style>
-    :root { --bg:#000; --panel:#0f1630; --text:#e8ecf8; --muted:#9fb2d0; --brand:#6aa1ff; --accent:#7cf7d4; --warn:#ffd166; }
-    *{box-sizing:border-box}
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;background:#000;color:var(--text);min-height:100dvh}
-
-    header{position:sticky;top:0;z-index:5;background:rgba(0,0,0,.85);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:12px}
-    header img{height:40px;width:auto;}
-    .wrap{max-width:980px;margin:0 auto;padding:16px;flex:1}
-    h1{margin:0;font-size:24px;letter-spacing:.2px}
-    .subtitle{color:var(--muted);font-size:14px}
-    .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:10px}
-    .pill{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);padding:8px 12px;border-radius:999px;color:var(--text);display:inline-flex;gap:8px;align-items:center}
-    .btn{cursor:pointer;border:none;border-radius:12px;padding:10px 14px;background:var(--panel);color:var(--text);border:1px solid rgba(255,255,255,.08)}
-    .btn:hover{background:#131b3a}
-    .btn.primary{background:linear-gradient(180deg,#6aa1ff,#4f86ff);border-color:#3d6fe3}
-    .grid{display:grid;grid-template-columns:1fr;gap:16px;margin-top:16px}
-    .card{background:rgba(11,16,32,.6);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px}
-    .card h3{margin:0 0 8px 0}
-    select, input[type="text"], textarea{background:#0e152f;color:var(--text);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px;min-width:160px}
-    table{width:100%;border-collapse:separate;border-spacing:0 8px}
-    th{font-size:12px;color:var(--muted);text-align:left;padding:0 12px}
-    td{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);padding:12px;border-left:0;border-right:0}
-    tr td:first-child{border-top-left-radius:10px;border-bottom-left-radius:10px;border-left:1px solid rgba(255,255,255,.08)}
-    tr td:last-child{border-top-right-radius:10px;border-bottom-right-radius:10px;border-right:1px solid rgba(255,255,255,.08)}
-    .medal{display:inline-block;min-width:26px;text-align:center;border-radius:8px;padding:4px 6px;font-weight:700}
-    .gold{background:linear-gradient(180deg,#ffd166,#ffc14d);color:#4a3700}
-    .silver{background:linear-gradient(180deg,#e6eef7,#d9e1ee);color:#2e3947}
-    .bronze{background:linear-gradient(180deg,#e6b089,#d79562);color:#4a2d15}
-    .muted{color:var(--muted)}
-    .footer{color:var(--muted);font-size:12px;margin-top:16px}
-
-    /* profile drawer */
-    .drawer{position:fixed;right:16px;bottom:16px;max-width:360px;width:calc(100% - 32px);transform:translateY(16px);opacity:0;pointer-events:none;transition:opacity .2s, transform .2s;z-index:20}
-    .drawer.show{opacity:1;transform:translateY(0);pointer-events:auto}
-    .drawer .card{background:rgba(13,20,43,.92);backdrop-filter:blur(8px)}
-    .avatar{width:52px;height:52px;border-radius:12px;background:#18224a;border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-weight:700}
-
-    /* request modal */
-    dialog{border:1px solid rgba(255,255,255,.15);border-radius:16px;background:#0d142b;color:var(--text);padding:0}
-    .modal-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.1)}
-    .modal-body{padding:16px}
-    .qr-box{display:flex;justify-content:center;padding:16px;border-radius:12px;background:rgba(255,255,255,.04)}
-    .copy{display:flex;gap:8px;margin-top:10px}
-    .tag{font-size:12px;color:var(--muted);border:1px solid rgba(255,255,255,.15);padding:4px 8px;border-radius:999px}
-    .req-item{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px 10px;margin-bottom:8px;font-size:14px}
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>카푸어's 아카이브</title>
+<style>
+  :root{--bg:#0a0b12;--text:#e9eef7;--muted:#9aa3b2;--line:rgba(255,255,255,.12);--accent:#6aa1ff;}
+  *{box-sizing:border-box} html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+  header{position:sticky;top:0;z-index:10;background:#0a0b12cc;border-bottom:1px solid var(--line);backdrop-filter:blur(8px)}
+  .container{max-width:1100px;margin:0 auto;padding:14px 16px}
+  .row{display:flex;gap:14px;align-items:center}
+  .logo{width:160px;height:160px;display:flex;align-items:center;justify-content:center}
+  .logo img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 0 2px rgba(255,255,255,.3))}
+  h1{margin:0;font-size:28px;font-weight:800} .sub{color:var(--muted);font-size:13px;margin-top:4px}
+  .btn{border:1px solid var(--line);background:#121527;color:var(--text);border-radius:10px;padding:8px 12px;cursor:pointer}
+  .btn:hover{background:#171b31} .badge{border:1px solid var(--line);border-radius:999px;padding:4px 8px;color:var(--muted);font-size:12px}
+  .hero{padding:40px 16px} .panel{border:1px solid var(--line);border-radius:16px;background:#0f1324;padding:18px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:14px}
+  .cat{display:flex;gap:10px;align-items:center;border:1px solid var(--line);background:#12162b;padding:14px;border-radius:14px;cursor:pointer}
+  .cat:hover{background:#171c34;transform:translateY(-1px)} .emoji{font-size:18px;width:28px;text-align:center}
+  main{display:none} .controls{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+  .pill{border:1px solid var(--line);background:#12162b;border-radius:999px;padding:8px 12px}
+  table{width:100%;border-collapse:separate;border-spacing:0 8px} th{color:var(--muted);font-size:12px;text-align:left;padding:0 10px}
+  td{background:#11162d;border:1px solid var(--line);padding:12px 10px} tr td:first-child{border-top-left-radius:10px;border-bottom-left-radius:10px}
+  tr td:last-child{border-top-right-radius:10px;border-bottom-right-radius:10px}
+  .name{display:inline-flex;align-items:center;gap:8px} .avatar{width:26px;height:26px;border-radius:7px;object-fit:cover;border:1px solid var(--line);background:#0a0b12}
+  .muted{color:var(--muted)} .hidden{display:none !important}
+  /* overlay */
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;z-index:50}
+  .overlay.show{display:flex} .modal{width:min(700px,92vw);background:#1a2038;border:1px solid var(--line);border-radius:14px}
+  .modal-h{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .modal-b{padding:14px}
+  /* members grid */
+  .mgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+  .mcard{display:flex;align-items:center;gap:10px;background:#12162b;border:1px solid var(--line);border-radius:12px;padding:10px}
+  /* admin modal basic */
+  dialog{border:1px solid var(--line);border-radius:14px;background:#0f1324;color:var(--text);padding:0}
+  dialog .head{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding:12px 14px}
+  dialog .body{padding:14px}
+  input,select,textarea{background:#0c1130;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+  .table-sm{width:100%;border-collapse:collapse} .table-sm th,.table-sm td{border:1px solid var(--line);padding:6px 8px;font-size:13px}
+</style>
 </head>
 <body>
-  <header>
-    <img id="logoImg" src="" alt="logo" style="display:none">
-    <div class="wrap">
-      <h1>카푸어's 아카이브</h1>
-      <div class="subtitle">친구들의 키/몸무게 등 항목별 정보를 아카이브하고 비교하기</div>
-      <div class="row">
-        <label class="pill">
-          항목
-          <select id="categorySelect" aria-label="항목 선택"></select>
-        </label>
-        <label class="pill">
-          정렬
-          <select id="sortSelect" aria-label="정렬 선택">
-            <option value="desc">값 큰 순</option>
-            <option value="asc">값 작은 순</option>
-          </select>
-        </label>
-        <label class="pill">
-          검색
-          <input type="text" id="searchInput" placeholder="이름 검색" />
-        </label>
-        <button class="btn" id="copyLinkBtn">링크 복사</button>
-        <button class="btn primary" id="qrBtn">QR 코드</button>
-        <button class="btn" id="reqBtn">신규 요청</button>
-      </div>
-    </div>
-      </div>
-  </header>
-
-  <!-- Admin tools (hidden by default; add ?admin=1 to URL to show) -->
-  <div id="adminTools" style="display:none;position:fixed;right:16px;top:72px;z-index:50">
-    <div class="card" style="background:rgba(0,0,0,.9)">
-      <div style="font-weight:700;margin-bottom:6px">소유자 전용</div>
-      <input id="logoFile" type="file" accept="image/*">
-      <div class="muted" style="font-size:12px;margin-top:6px">이미지 선택 → 아래 버튼으로 <b>자급자족 단일 파일</b> 생성</div>
-      <button class="btn" id="exportSingle" style="margin-top:8px">단일 HTML로 저장</button>
-    </div>
-  </div>
-
-
-  <main class="wrap grid">
-    <section class="card" id="rankCard">
-      <h3 id="catTitle">항목</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>순위</th>
-            <th>이름</th>
-            <th>값</th>
-            <th>업데이트</th>
-          </tr>
-        </thead>
-        <tbody id="rankBody"></tbody>
-      </table>
-      <div class="footer">
-        URL 매개변수 <code>?cat=슬러그</code> 로 특정 항목을 바로 열 수 있어요.
-        예: <span class="tag">?cat=height</span>
-      </div>
-    </section>
-
-    <section class="card" id="reqCard">
-      <h3>요청 목록</h3>
-      <div id="reqList"></div>
-    </section>
-  </main>
-
-  <div class="drawer" id="profileDrawer">
-    <div class="card">
-      <div class="row" style="justify-content:space-between;align-items:flex-start">
-        <div style="display:flex;gap:12px;align-items:center">
-          <div class="avatar" id="pAvatar">👤</div>
-          <div>
-            <div style="font-weight:700" id="pName">이름</div>
-            <div class="muted" id="pSubtitle">프로필 정보 대기중</div>
-          </div>
+<header>
+  <div class="container">
+    <div class="row" style="align-items:flex-start">
+      <div class="logo"><img src="./logo.png" alt="logo"></div>
+      <div style="flex:1 1 auto">
+        <h1>카푸어's 아카이브</h1>
+        <div class="sub">카푸어의 데이터 창고</div>
+        <div class="row" style="margin-top:8px;flex-wrap:wrap">
+          <button class="btn" id="btnCopy">링크 복사</button>
+          <button class="btn" id="btnUpdates">업데이트</button>
+          <button class="btn" id="btnAdmin">창고정리</button>
+          <span id="badgeAdmin" class="badge hidden">관리자 모드</span>
+          <button class="btn hidden" id="btnHome">홈으로</button>
         </div>
-        <button class="btn" id="pClose">닫기</button>
       </div>
-      <div style="margin-top:12px" id="pBody" class="muted"></div>
     </div>
   </div>
+</header>
 
-  <!-- 요청 모달 -->
-  <dialog id="reqModal">
-    <div class="modal-head">
-      <strong>신규 요청</strong>
-      <button class="btn" id="closeReq">닫기</button>
+<section class="hero" id="hero">
+  <div class="container">
+    <div class="panel">
+      <div style="font-size:20px;font-weight:800">카테고리를 선택하세요</div>
+      <div class="sub">원하는 항목을 먼저 고르세요. 버튼은 나중에 더 추가할 수 있어요.</div>
+      <div class="grid" id="heroGrid"></div>
     </div>
-    <div class="modal-body">
-      <textarea id="reqText" rows="4" style="width:100%" placeholder="요청 내용을 입력하세요..."></textarea>
-      <button class="btn primary" style="margin-top:10px" id="submitReq">등록</button>
-    </div>
-  </dialog>
+  </div>
+</section>
 
-  <dialog id="qrModal">
-    <div class="modal-head">
-      <strong>QR로 접속하기</strong>
-      <button class="btn" id="closeQr">닫기</button>
-    </div>
-    <div class="modal-body">
-      <div class="copy">
-        <input type="text" id="shareUrl" style="flex:1" readonly>
-        <button class="btn" id="copyFromModal">복사</button>
+<main id="page">
+  <div class="container">
+    <div class="panel">
+      <div class="row" style="justify-content:space-between">
+        <div style="font-weight:700" id="catTitle">항목</div>
+        <div class="controls">
+          <label class="pill">항목 <select id="selCat"></select></label>
+          <label class="pill" id="wrapSort">정렬 <select id="selSort"><option value="desc">값 큰 순</option><option value="asc">값 작은 순</option></select></label>
+        </div>
       </div>
-      <div class="qr-box"><div id="qrcode"></div></div>
+      <div id="wrapMembers" class="hidden"></div>
+      <table id="tbl">
+        <thead id="thead"></thead>
+        <tbody id="tbody"></tbody>
+      </table>
     </div>
-  </dialog>
 
-  <script>
-    /**
-     * ====== DATA ======
-     */
-    const DATA = {
-      people: ["민수", "지연", "수현", "태호", "루카"],
-      categories: [
-        { id: "height", name: "키", unit: "cm", scores: {}, updated: {} },
-        { id: "weight", name: "몸무게", unit: "kg", scores: {}, updated: {} }
-      ],
-      profiles: {},
-      LOGO_DATA_URL: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAasAAAGpCAYAAAAz2RlmAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAKCSURBVHhe7cExAQAAAMKg9U9tDQ+gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" // 여기에 dataURL을 넣으면 로고가 항상 표시됩니다.
-    };
+    <div class="panel" style="margin-top:12px">
+      <div class="row" style="justify-content:space-between">
+        <div style="font-weight:700">요청 목록</div>
+        <button class="btn" id="btnReqOpen">신규 요청</button>
+      </div>
+      <div id="reqList"></div>
+    </div>
+  </div>
+</main>
 
-    const REQ_KEY = "req_list";
-    let reqs = JSON.parse(localStorage.getItem(REQ_KEY)||"[]");
+<!-- Request -->
+<dialog id="dlgReq">
+  <div class="head"><strong>신규 요청</strong><button class="btn" id="dlgReqClose">닫기</button></div>
+  <div class="body">
+    <textarea id="reqText" rows="6" style="width:100%" placeholder="요청 내용을 입력하세요..."></textarea>
+    <div style="margin-top:10px"><button class="btn" id="reqSave">등록</button></div>
+  </div>
+</dialog>
 
-    const $ = (sel) => document.querySelector(sel);
-    const fmtDate = (d) => d || "-";
+<!-- Updates -->
+<dialog id="dlgUpd">
+  <div class="head"><strong>최근 업데이트</strong><button class="btn" id="dlgUpdClose">닫기</button></div>
+  <div class="body"><div id="updList"></div></div>
+</dialog>
 
-    const categorySelect = $("#categorySelect");
-    const sortSelect = $("#sortSelect");
-    const searchInput = $("#searchInput");
-    const rankBody = $("#rankBody");
-    const catTitle = $("#catTitle");
+<!-- Admin login -->
+<dialog id="dlgAdminPw">
+  <div class="head"><strong>창고정리 (관리자)</strong><button class="btn" id="dlgAdminPwClose">닫기</button></div>
+  <div class="body">
+    <input type="password" id="adminPw" placeholder="패스워드 입력">
+    <button class="btn" id="adminPwOk">확인</button>
+    <div class="sub" style="margin-top:6px">관리자 전용입니다.</div>
+  </div>
+</dialog>
 
-    const drawer = $("#profileDrawer");
-    const pName = $("#pName");
-    const pSubtitle = $("#pSubtitle");
-    const pBody = $("#pBody");
-    const pAvatar = $("#pAvatar");
+<!-- Admin panel -->
+<dialog id="dlgAdmin">
+  <div class="head"><strong>창고정리 — 관리자 모드</strong><div class="row"><button class="btn" id="adminLogout">관리자 해제</button><button class="btn" id="dlgAdminClose">닫기</button></div></div>
+  <div class="body">
+    <div style="font-weight:700;margin-bottom:6px">사람 관리</div>
+    <div class="row" style="gap:6px;margin-bottom:8px">
+      <input id="newPerson" placeholder="새 이름">
+      <button class="btn" id="addPerson">추가</button>
+    </div>
+    <table class="table-sm">
+      <thead><tr><th style="width:40px">사진</th><th>이름</th><th style="width:210px">사진 업로드</th><th style="width:100px">사진 제거</th><th style="width:100px">삭제</th></tr></thead>
+      <tbody id="peopleTable"></tbody>
+    </table>
 
-    function populateCategoryOptions(){
-      categorySelect.innerHTML = DATA.categories.map(c=>`<option value="${c.id}">${c.name}${c.unit?` (${c.unit})`:''}</option>`).join("");
-    }
+    <div style="font-weight:700;margin:14px 0 6px">카테고리 관리</div>
+    <div class="row" style="gap:6px;margin-bottom:8px">
+      <input id="catId" placeholder="id (예:bmi)">
+      <input id="catName" placeholder="이름 (예:BMI)">
+      <select id="catType"><option value="metric">metric</option><option value="profile">profile</option><option value="members">members</option></select>
+      <input id="catUnit" placeholder="단위(선택)">
+      <input id="catEmoji" placeholder="아이콘(선택, 예:📊)">
+      <button class="btn" id="addCat">카테고리 추가</button>
+    </div>
+    <table class="table-sm">
+      <thead><tr><th>id</th><th>이름</th><th>유형</th><th>단위</th><th>아이콘</th><th style="width:100px">삭제</th></tr></thead>
+      <tbody id="catsTable"></tbody>
+    </table>
 
-    function getCurrentCat(){
-      const url = new URL(window.location.href);
-      const id = url.searchParams.get("cat") || DATA.categories[0]?.id;
-      return DATA.categories.find(c=>c.id===id) || DATA.categories[0];
-    }
+    <div style="font-weight:700;margin:14px 0 6px">데이터 편집</div>
+    <div class="row" style="gap:6px;margin-bottom:8px">
+      <select id="editCat"></select>
+      <button class="btn" id="editRefresh">새로고침</button>
+    </div>
+    <div id="editArea"></div>
 
-    function setCatInUrl(id){
-      const url = new URL(window.location.href);
-      url.searchParams.set("cat", id);
-      history.replaceState({}, "", url);
-    }
+    <div style="font-weight:700;margin:14px 0 6px">백업/복구</div>
+    <div class="row" style="gap:6px;margin-bottom:8px">
+      <button class="btn" id="btnExport">내보내기</button>
+      <button class="btn" id="btnImport">가져오기</button>
+    </div>
+    <textarea id="jsonArea" rows="8" style="width:100%"></textarea>
+  </div>
+</dialog>
 
-    function render(){
-      const cat = getCurrentCat();
-      if(!cat) return;
-      catTitle.textContent = cat.name + (cat.unit?` (${cat.unit})`:"");
-      categorySelect.value = cat.id;
+<!-- Profile overlay -->
+<div class="overlay" id="ov">
+  <div class="modal">
+    <div class="modal-h"><div class="row"><img id="ovAvatar" class="avatar"><strong id="ovName"></strong></div><button class="btn" id="ovClose">닫기</button></div>
+    <div class="modal-b"><div id="ovBody" class="muted"></div></div>
+  </div>
+</div>
 
-      const rows = DATA.people.map(name=>({
-        name,
-        value: (cat.scores[name]!==undefined && cat.scores[name]!==null) ? Number(cat.scores[name]) : null,
-        updated: cat.updated?.[name] || ""
-      }));
+<script>
+(function(){
+  // --- basic error banner to catch issues ---
+  window.onerror = function(msg, src, line, col, err){
+    try{
+      var b=document.createElement('div'); b.style.cssText='position:fixed;left:10px;bottom:10px;background:#3a0c0c;color:#fff;border:1px solid #ea6; padding:8px 10px;border-radius:8px;z-index:9999';
+      b.textContent='오류: '+msg; document.body.appendChild(b);
+    }catch(e){}
+  };
 
-      const q = searchInput.value.trim().toLowerCase();
-      const filtered = q? rows.filter(r=>r.name.toLowerCase().includes(q)) : rows;
-
-      const dir = sortSelect.value;
-      filtered.sort((a,b)=>{
-        const av = (a.value==null? Number.NEGATIVE_INFINITY : a.value);
-        const bv = (b.value==null? Number.NEGATIVE_INFINITY : b.value);
-        const cmp = (dir==="asc"? av-bv : bv-av);
-        return cmp!==0? cmp : a.name.localeCompare(b.name);
-      });
-
-      rankBody.innerHTML = filtered.map((r, idx)=>{
-        const i = idx+1;
-        let medal = `<span class="medal">${i}</span>`;
-        if(i===1) medal = `<span class="medal gold">1</span>`;
-        else if(i===2) medal = `<span class="medal silver">2</span>`;
-        else if(i===3) medal = `<span class="medal bronze">3</span>`;
-        const valText = (r.value==null? '-' : (Number.isInteger(r.value)? r.value : r.value.toFixed(2)));
-        return `<tr>
-          <td>${medal}</td>
-          <td><button class="btn" data-name="${r.name}" style="padding:6px 10px">${r.name}</button></td>
-          <td>${valText}</td>
-          <td class="muted">${fmtDate(r.updated)}</td>
-        </tr>`
-      }).join("");
-
-      rankBody.querySelectorAll('button[data-name]').forEach(btn=>{
-        btn.addEventListener('click', ()=> openProfile(btn.dataset.name));
-      });
-
-      renderReqs();
-    }
-
-    function openProfile(name){
-      const prof = DATA.profiles?.[name];
-      pName.textContent = name;
-      pSubtitle.textContent = prof?.subtitle || '프로필 정보 대기중';
-      pBody.textContent = prof?.bio || '';
-      pAvatar.textContent = (name?.[0]||'👤');
-      drawer.classList.add('show');
-    }
-
-    document.getElementById('pClose').addEventListener('click', ()=> drawer.classList.remove('show'));
-
-    // 요청 기능
-    const reqBtn = document.getElementById('reqBtn');
-    const reqModal = document.getElementById('reqModal');
-    const closeReq = document.getElementById('closeReq');
-    const reqText = document.getElementById('reqText');
-    const submitReq = document.getElementById('submitReq');
-    const reqList = document.getElementById('reqList');
-
-    reqBtn.addEventListener('click', ()=>{ reqText.value=""; reqModal.showModal(); });
-    closeReq.addEventListener('click', ()=> reqModal.close());
-    submitReq.addEventListener('click', ()=>{
-      const val = reqText.value.trim();
-      if(!val) return;
-      reqs.unshift({text:val, date:new Date().toLocaleString()});
-      localStorage.setItem(REQ_KEY, JSON.stringify(reqs));
-      reqModal.close();
-      renderReqs();
-    });
-
-    function renderReqs(){
-      reqList.innerHTML = reqs.map(r=>`<div class="req-item">${r.text}<div class="muted" style="font-size:12px">${r.date}</div></div>`).join("");
-    }
-
-    // 로고 표시
-    const logoEl = document.getElementById('logoImg');
-    function applyLogo(){
-      if(DATA.LOGO_DATA_URL){ logoEl.src = DATA.LOGO_DATA_URL; logoEl.style.display='block'; }
-      else { logoEl.style.display='none'; }
-    }
-    applyLogo();
-
-    // Admin tools: ?admin=1 일 때만 표시, 선택한 이미지를 dataURL로 변환 후 단일 파일 저장
-    (function(){
-      const url = new URL(location.href);
-      if(url.searchParams.get('admin')==='1'){
-        document.getElementById('adminTools').style.display='block';
+  // --- Data ---
+  var DEFAULT = {
+    people:["민수","지연","수현","태호","루카"],
+    categories:[
+      {id:"weight",name:"몸무게",unit:"kg",emoji:"⚖️",type:"metric",scores:{},updated:{}},
+      {id:"height",name:"키",unit:"cm",emoji:"📏",type:"metric",scores:{},updated:{}},
+      {id:"profile",name:"프로필",emoji:"👤",type:"profile"},
+      {id:"members",name:"멤버 명단 보기",emoji:"🧑‍🤝‍🧑",type:"members"}
+    ],
+    profiles:{},
+    avatars:{}
+  };
+  var STORAGE="ARCHIVE_DATA_V11", ADMIN="5193", PINNED=["weight","height","profile","members"];
+  var DATA = JSON.parse(JSON.stringify(DEFAULT));
+  try{
+    var raw = localStorage.getItem(STORAGE);
+    if(raw){ var saved = JSON.parse(raw);
+      // merge people
+      if(saved && saved.people && saved.people.length){ var set={}; DATA.people.concat(saved.people).forEach(function(n){ if(n) set[n]=1; }); DATA.people=Object.keys(set); }
+      // merge categories by id
+      if(saved && saved.categories && saved.categories.length){
+        var byId={}; DATA.categories.forEach(function(c){byId[c.id]=c;});
+        saved.categories.forEach(function(c){ if(c && c.id){ byId[c.id]=Object.assign({scores:{},updated:{}}, byId[c.id]||{}, c); }});
+        DATA.categories = Object.keys(byId).map(function(k){return byId[k];});
       }
-      const logoInput = document.getElementById('logoFile');
-      const exportBtn = document.getElementById('exportSingle');
-      exportBtn?.addEventListener('click', async ()=>{
-        if(!logoInput.files || !logoInput.files[0]){ alert('로고 이미지를 선택하세요.'); return; }
-        const file = logoInput.files[0];
-        const dataUrl = await new Promise((res)=>{ const r=new FileReader(); r.onload=e=>res(e.target.result); r.readAsDataURL(file); });
-        // 현재 문서 HTML을 문자열로 복제 후, DATA.LOGO_DATA_URL 값을 dataUrl로 대체
-        let html = document.documentElement.outerHTML;
-        html = html.replace(/LOGO_DATA_URL: \"[^\"]*\"/, `LOGO_DATA_URL: \"${dataUrl}\"`);
-        // 다운로드
-        const blob = new Blob(["<!DOCTYPE html>
-"+html], {type:'text/html'});
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'kapoor-archive.single.html';
-        a.click();
+      if(saved && saved.profiles) DATA.profiles = saved.profiles;
+      if(saved && saved.avatars) DATA.avatars = saved.avatars;
+    }
+  }catch(e){}
+
+  // --- helpers ---
+  function $(id){ return document.getElementById(id); }
+  function copy(t){ if(navigator.clipboard){ navigator.clipboard.writeText(t).then(function(){ toast('복사됨'); }); } }
+  function toast(m){ var el=document.createElement('div'); el.textContent=m; el.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:#141a33;color:#fff;border:1px solid rgba(255,255,255,.2);padding:8px 10px;border-radius:8px;z-index:9999'; document.body.appendChild(el); setTimeout(function(){ document.body.removeChild(el); }, 1200); }
+  function avatar(name){ return (DATA.avatars && DATA.avatars[name]) ? DATA.avatars[name] : ""; }
+  function getCat(id){ for(var i=0;i<DATA.categories.length;i++){ if(DATA.categories[i].id===id) return DATA.categories[i]; } return null; }
+  function setURLCat(id){ var u=new URL(location.href); u.searchParams.set('cat', id); history.replaceState({},'',u); }
+  function getURLCat(){ var u=new URL(location.href); return u.searchParams.get('cat'); }
+
+  // --- Hero buttons ---
+  function renderHero(){
+    var order = PINNED.slice();
+    DATA.categories.forEach(function(c){ if(order.indexOf(c.id)===-1) order.push(c.id); });
+    var html = "";
+    order.forEach(function(id){
+      var c = getCat(id); if(!c) return;
+      html += '<div class="cat" data-id="'+c.id+'"><div class="emoji">'+(c.emoji||"🏷️")+'</div><div><div style="font-weight:700">'+c.name+(c.unit?(" ("+c.unit+")"):"")+'</div><div class="muted" style="font-size:12px">데이터 보기</div></div></div>';
+    });
+    $('heroGrid').innerHTML = html;
+    Array.prototype.forEach.call(document.querySelectorAll('.cat[data-id]'), function(el){
+      el.addEventListener('click', function(){ openCat(el.getAttribute('data-id')); });
+    });
+  }
+
+  // --- List rendering ---
+  function showHero(){ $('hero').style.display='block'; $('page').style.display='none'; $('btnHome').classList.add('hidden'); }
+  function showPage(){ $('hero').style.display='none'; $('page').style.display='block'; $('btnHome').classList.remove('hidden'); }
+
+  function renderList(){
+    var catId = getURLCat() || (DATA.categories[0] ? DATA.categories[0].id : 'profile');
+    var cat = getCat(catId);
+    $('catTitle').textContent = (cat ? cat.name : '항목') + (cat && cat.unit ? (' ('+cat.unit+')') : '');
+    // category selector
+    $('selCat').innerHTML = DATA.categories.map(function(c){ return '<option value="'+c.id+'">'+c.name+(c.unit?(' ('+c.unit+')'):'')+' — '+c.type+'</option>'; }).join('');
+    $('selCat').value = cat ? cat.id : '';
+    // reset areas
+    $('wrapMembers').classList.add('hidden');
+    $('tbl').style.display='table';
+    // profile
+    if(cat && cat.type==='profile'){
+      $('wrapSort').style.display='none';
+      $('thead').innerHTML = '<tr><th>이름</th></tr>';
+      var names = {}; DATA.people.forEach(function(n){names[n]=1;}); for(var n in DATA.profiles){names[n]=1;}
+      var list = Object.keys(names).sort();
+      $('tbody').innerHTML = list.map(function(name){
+        var av = avatar(name);
+        return '<tr><td><button class="name btnLink" data-open="'+name+'" style="all:unset;cursor:pointer"><span>'+(av?'<img class="avatar" src="'+av+'">':'')+'</span><span>'+name+'</span></button></td></tr>';
+      }).join('');
+      Array.prototype.forEach.call(document.querySelectorAll('[data-open]'), function(b){
+        b.addEventListener('click', function(){ openProfile(b.getAttribute('data-open')); });
       });
-    })();
+    }
+    // members
+    else if(cat && cat.type==='members'){
+      $('wrapSort').style.display='none';
+      $('tbl').style.display='none';
+      $('wrapMembers').classList.remove('hidden');
+      // registered members
+      var set={}, i, c;
+      for(i=0;i<DATA.categories.length;i++){ c=DATA.categories[i]; if(c.type==='metric'){ for(var k in (c.scores||{})){ if(c.scores[k]!=null && c.scores[k] !== '') set[k]=1; } for(var k2 in (c.updated||{})){ if(c.updated[k2]) set[k2]=1; } } }
+      for(var p in DATA.profiles){ if(DATA.profiles[p] && (DATA.profiles[p].subtitle||DATA.profiles[p].bio||DATA.profiles[p].updated)) set[p]=1; }
+      for(var a in DATA.avatars){ if(DATA.avatars[a]) set[a]=1; }
+      var names = Object.keys(set).sort();
+      $('wrapMembers').innerHTML = '<div class="mgrid">'+names.map(function(n){
+        var av = avatar(n);
+        return '<div class="mcard">'+(av?'<img class="avatar" style="width:40px;height:40px;border-radius:12px" src="'+av+'">':'')+'<div>'+n+'</div></div>';
+      }).join('')+'</div>';
+    }
+    // metric
+    else{
+      $('wrapSort').style.display='';
+      $('thead').innerHTML = '<tr><th>순위</th><th>이름</th><th>값</th><th>업데이트</th></tr>';
+      var rows = DATA.people.map(function(name){
+        var v = (cat && cat.scores) ? cat.scores[name] : null;
+        return {name:name,value:(v!=null?Number(v):null),updated:(cat && cat.updated ? cat.updated[name] : '')};
+      });
+      var dir = $('selSort').value;
+      rows.sort(function(a,b){
+        var av = (a.value==null?-1e15:a.value), bv=(b.value==null?-1e15:b.value);
+        var d = dir==='asc' ? (av-bv) : (bv-av);
+        if(d!==0) return d; return a.name.localeCompare(b.name);
+      });
+      $('tbody').innerHTML = rows.map(function(r,i){
+        var medal = (i===0?'<span style="background:#ffd166;color:#3a2b00;padding:3px 6px;border-radius:8px;font-weight:800">1</span>':i===1?'<span style="background:#e6eef7;color:#263246;padding:3px 6px;border-radius:8px;font-weight:800">2</span>':i===2?'<span style="background:#e6b089;color:#3a2312;padding:3px 6px;border-radius:8px;font-weight:800">3</span>':'<span class="muted">'+(i+1)+'</span>');
+        var v = (r.value==null?'-':(Math.round(r.value*100)/100));
+        var av = avatar(r.name);
+        return '<tr><td>'+medal+'</td><td><span class="name">'+(av?'<img class="avatar" src="'+av+'">':'')+'<span>'+r.name+'</span></span></td><td>'+v+'</td><td class="muted">'+(r.updated||'-')+'</td></tr>';
+      }).join('');
+    }
+  }
 
-    // QR 코드 & 복사
-    const qrBtn = document.getElementById('qrBtn');
-    const qrModal = document.getElementById('qrModal');
-    const closeQr = document.getElementById('closeQr');
-    const qrcodeBox = document.getElementById('qrcode');
-    const shareUrl = document.getElementById('shareUrl');
-    const copyFromModal = document.getElementById('copyFromModal');
-    const copyLinkBtn = document.getElementById('copyLinkBtn');
+  function openCat(id){ setURLCat(id); showPage(); renderList(); }
 
-    function currentUrl(){ return window.location.href; }
-    async function copy(text){ try{ await navigator.clipboard.writeText(text); toast('복사됨!'); }catch{ alert('복사
+  // profile overlay
+  function openProfile(name){
+    var p = (DATA.profiles && DATA.profiles[name]) ? DATA.profiles[name] : {};
+    $('ovName').textContent = name;
+    var av = avatar(name); if(av){ $('ovAvatar').src=av; $('ovAvatar').style.visibility='visible'; } else { $('ovAvatar').removeAttribute('src'); $('ovAvatar').style.visibility='hidden'; }
+    $('ovBody').innerHTML = (p.subtitle?('<div style="font-weight:700;margin-bottom:6px">'+p.subtitle+'</div>'):'') + (p.bio?('<div style="white-space:pre-wrap">'+p.bio+'</div>'):'<div class="muted">프로필이 없습니다.</div>') + (p.updated?('<div class="muted" style="margin-top:8px;font-size:12px">업데이트: '+p.updated+'</div>') : '');
+    $('ov').classList.add('show');
+  }
+  $('ovClose').addEventListener('click', function(){ $('ov').classList.remove('show'); });
+  $('ov').addEventListener('click', function(e){ if(e.target.id==='ov') $('ov').classList.remove('show'); });
+
+  // updates
+  function parseDate(s){ if(!s) return null; var t=Date.parse(s); if(!isNaN(t)) return new Date(t); s=s.replace(/[./]/g,'-'); t=Date.parse(s); return isNaN(t)?null:new Date(t); }
+  function collectUpdates(){
+    var items=[];
+    DATA.categories.forEach(function(cat){
+      if(cat.type==='metric'){
+        for(var n in (cat.updated||{})){ var d=parseDate(cat.updated[n]); if(d){ items.push({date:d,label:'['+cat.name+'] '+n,detail:(cat.scores&&cat.scores[n]!=null?cat.scores[n]+(cat.unit||''):'값 미입력')}); } }
+      }
+    });
+    for(var n in (DATA.profiles||{})){
+      var p=DATA.profiles[n]; var d=parseDate(p.updated); if(d){ items.push({date:d,label:'[프로필] '+n,detail:(p.subtitle||p.bio||'프로필 업데이트')}); }
+    }
+    items.sort(function(a,b){ return b.date - a.date; });
+    return items;
+  }
+
+  // admin area
+  function isAdmin(){ return sessionStorage.getItem('admin')==='1'; }
+  function setAdmin(v){ if(v){ sessionStorage.setItem('admin','1'); $('badgeAdmin').classList.remove('hidden'); } else { sessionStorage.removeItem('admin'); $('badgeAdmin').classList.add('hidden'); } }
+  function save(){ try{ localStorage.setItem(STORAGE, JSON.stringify(DATA)); }catch(e){} }
+
+  function fillPeople(){
+    // registered members only
+    var set={}, i,c;
+    for(i=0;i<DATA.categories.length;i++){ c=DATA.categories[i]; if(c.type==='metric'){ for(var k in (c.scores||{})){ if(c.scores[k]!=null && c.scores[k]!=='') set[k]=1; } for(var k2 in (c.updated||{})){ if(c.updated[k2]) set[k2]=1; } } }
+    for(var p in DATA.profiles){ if(DATA.profiles[p] && (DATA.profiles[p].subtitle||DATA.profiles[p].bio||DATA.profiles[p].updated)) set[p]=1; }
+    for(var a in DATA.avatars){ if(DATA.avatars[a]) set[a]=1; }
+    var list = Object.keys(set).sort();
+    $('peopleTable').innerHTML = list.map(function(n){
+      var av = avatar(n);
+      return '<tr><td>'+(av?'<img class="avatar" src="'+av+'">':'')+'</td><td>'+n+'</td><td><input type="file" accept="image/*" data-up="'+n+'"></td><td><button class="btn" data-clr="'+n+'">제거</button></td><td><button class="btn" data-del="'+n+'">삭제</button></td></tr>';
+    }).join('');
+    Array.prototype.forEach.call(document.querySelectorAll('input[type="file"][data-up]'), function(inp){
+      inp.addEventListener('change', function(e){
+        var f = inp.files && inp.files[0]; if(!f) return;
+        var r = new FileReader(); r.onload = function(){ if(!DATA.avatars) DATA.avatars={}; DATA.avatars[inp.getAttribute('data-up')] = r.result; save(); fillPeople(); renderList(); };
+        r.readAsDataURL(f);
+      });
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('button[data-clr]'), function(b){
+      b.addEventListener('click', function(){ if(DATA.avatars){ delete DATA.avatars[b.getAttribute('data-clr')]; save(); fillPeople(); renderList(); } });
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('button[data-del]'), function(b){
+      b.addEventListener('click', function(){
+        var name=b.getAttribute('data-del'); if(!confirm(name+' 삭제?')) return;
+        DATA.people = DATA.people.filter(function(x){return x!==name;});
+        DATA.categories.forEach(function(cat){ if(cat.type==='metric'){ if(cat.scores) delete cat.scores[name]; if(cat.updated) delete cat.updated[name]; } });
+        if(DATA.profiles) delete DATA.profiles[name];
+        if(DATA.avatars) delete DATA.avatars[name];
+        save(); fillPeople(); renderList();
+      });
+    });
+  }
+  function fillCats(){
+    $('catsTable').innerHTML = DATA.categories.map(function(c){
+      return '<tr><td>'+c.id+'</td><td>'+c.name+'</td><td>'+c.type+'</td><td>'+(c.unit||'')+'</td><td>'+(c.emoji||'')+'</td><td><button class="btn" data-rmcat="'+c.id+'">삭제</button></td></tr>';
+    }).join('');
+    Array.prototype.forEach.call(document.querySelectorAll('[data-rmcat]'), function(b){
+      b.addEventListener('click', function(){
+        var id=b.getAttribute('data-rmcat'); if(!confirm(id+' 카테고리 삭제?')) return;
+        DATA.categories = DATA.categories.filter(function(x){ return x.id!==id; });
+        save(); fillCats(); renderHero(); renderList();
+      });
+    });
+    // editor select
+    $('editCat').innerHTML = DATA.categories.map(function(c){ return '<option value="'+c.id+'">'+c.name+(c.unit?(' ('+c.unit+')'):'')+' — '+c.type+'</option>'; }).join('');
+    if(!getCat($('editCat').value) && DATA.categories[0]) $('editCat').value = DATA.categories[0].id;
+    fillEditor($('editCat').value);
+  }
+  function fillEditor(catId){
+    var c = getCat(catId); if(!c){ $('editArea').innerHTML='<div class="muted">카테고리를 선택</div>'; return; }
+    // profile
+    if(c.type==='profile'){
+      var rows = DATA.people.map(function(name){
+        var p = (DATA.profiles && DATA.profiles[name]) ? DATA.profiles[name] : {};
+        return '<tr><td>'+name+'</td><td><input data-n="'+name+'" data-k="subtitle" value="'+(p.subtitle?String(p.subtitle).replace(/"/g,'&quot;'):'')+'"></td><td><input data-n="'+name+'" data-k="bio" value="'+(p.bio?String(p.bio).replace(/"/g,'&quot;'):'')+'"></td><td><input data-n="'+name+'" data-k="updated" placeholder="YYYY-MM-DD" value="'+(p.updated||'')+'"></td></tr>';
+      }).join('');
+      $('editArea').innerHTML = '<table class="table-sm"><thead><tr><th>이름</th><th>부제</th><th>바이오</th><th>업데이트</th></tr></thead><tbody>'+rows+'</tbody></table><div style="margin-top:8px"><button class="btn" id="saveProfile">저장</button></div>';
+      $('saveProfile').onclick=function(){
+        DATA.people.forEach(function(name){
+          var q=function(k){ return document.querySelector('input[data-n="'+name+'"][data-k="'+k+'"]'); };
+          var sub=q('subtitle').value.trim(), bio=q('bio').value.trim(), upd=q('updated').value.trim();
+          if(!DATA.profiles) DATA.profiles={}; if(!DATA.profiles[name]) DATA.profiles[name]={};
+          if(sub||bio||upd){ DATA.profiles[name].subtitle=sub||undefined; DATA.profiles[name].bio=bio||undefined; DATA.profiles[name].updated=upd||undefined; }
+          if(!sub && !bio && !upd){ delete DATA.profiles[name]; }
+        });
+        save(); renderList(); toast('저장됨');
+      };
+    } else if(c.type==='members'){
+      $('editArea').innerHTML = '<div class="muted">멤버 명단은 자동 생성됩니다.</div>';
+    } else { // metric
+      var rows = DATA.people.map(function(name){
+        var v = c.scores? (c.scores[name]!=null?c.scores[name]:'') : '';
+        var u = c.updated? (c.updated[name]||'') : '';
+        return '<tr><td>'+name+'</td><td><input data-n="'+name+'" data-k="value" value="'+v+'"></td><td><input data-n="'+name+'" data-k="updated" placeholder="YYYY-MM-DD" value="'+u+'"></td></tr>';
+      }).join('');
+      $('editArea').innerHTML = '<table class="table-sm"><thead><tr><th>이름</th><th>값'+(c.unit?(' ('+c.unit+')'):'')+'</th><th>업데이트</th></tr></thead><tbody>'+rows+'</tbody></table><div style="margin-top:8px"><button class="btn" id="saveMetric">저장</button></div>';
+      $('saveMetric').onclick=function(){
+        if(!c.scores) c.scores={}; if(!c.updated) c.updated={};
+        DATA.people.forEach(function(name){
+          var q=function(k){ return document.querySelector('input[data-n="'+name+'"][data-k="'+k+'"]'); };
+          var v=q('value').value.trim(); var u=q('updated').value.trim();
+          c.scores[name] = (v===''? null : Number(v));
+          c.updated[name] = u || '';
+        });
+        save(); renderList(); toast('저장됨');
+      };
+    }
+  }
+
+  // --- events ---
+  $('selCat').addEventListener('change', function(){ openCat(this.value); });
+  $('selSort').addEventListener('change', renderList);
+  $('btnHome').addEventListener('click', function(){ var u=new URL(location.href); u.searchParams.delete('cat'); history.replaceState({},'',u); showHero(); });
+  $('btnCopy').addEventListener('click', function(){ copy(location.href); });
+  $('btnUpdates').addEventListener('click', function(){
+    var items = collectUpdates();
+    $('updList').innerHTML = items.length? items.map(function(it){ return '<div style="border:1px solid var(--line);background:#12162b;border-radius:10px;padding:8px 10px;margin-bottom:8px"><div><strong>'+it.label+'</strong></div><div class="muted" style="font-size:12px">'+it.date.toISOString().slice(0,10)+'</div><div>'+it.detail+'</div></div>'; }).join('') : '<div class="muted">최근 업데이트가 없습니다.</div>';
+    $('dlgUpd').showModal();
+  });
+  $('dlgUpdClose').addEventListener('click', function(){ $('dlgUpd').close(); });
+
+  $('btnReqOpen').addEventListener('click', function(){ $('reqText').value=''; $('dlgReq').showModal(); });
+  $('dlgReqClose').addEventListener('click', function(){ $('dlgReq').close(); });
+  var REQ="req_list"; var reqs = []; try{ reqs = JSON.parse(localStorage.getItem(REQ) || "[]"); }catch(e){}
+  function renderReqs(){ $('reqList').innerHTML = reqs.map(function(r){ return '<div style="border:1px solid var(--line);background:#12162b;border-radius:10px;padding:8px 10px;margin-bottom:8px">'+r.text+'<div class="muted" style="font-size:12px">'+r.date+'</div></div>'; }).join(''); }
+  renderReqs();
+  $('reqSave').addEventListener('click', function(){ var v=$('reqText').value.trim(); if(!v) return; reqs.unshift({text:v,date:new Date().toLocaleString()}); localStorage.setItem(REQ, JSON.stringify(reqs)); $('dlgReq').close(); renderReqs(); });
+
+  // admin
+  $('btnAdmin').addEventListener('click', function(){ if(!isAdmin()){ $('adminPw').value=''; $('dlgAdminPw').showModal(); } else { fillPeople(); fillCats(); $('dlgAdmin').showModal(); } });
+  $('dlgAdminPwClose').addEventListener('click', function(){ $('dlgAdminPw').close(); });
+  $('adminPwOk').addEventListener('click', function(){ if($('adminPw').value===ADMIN){ setAdmin(true); $('dlgAdminPw').close(); fillPeople(); fillCats(); $('dlgAdmin').showModal(); } else { toast('패스워드 오류'); } });
+  $('dlgAdminClose').addEventListener('click', function(){ $('dlgAdmin').close(); });
+  $('adminLogout').addEventListener('click', function(){ setAdmin(false); $('dlgAdmin').close(); });
+
+  $('addPerson').addEventListener('click', function(){ var name=$('newPerson').value.trim(); if(!name) return; if(DATA.people.indexOf(name)===-1) DATA.people.push(name); $('newPerson').value=''; save(); fillPeople(); renderList(); });
+  $('addCat').addEventListener('click', function(){
+    var id=$('catId').value.trim(), name=$('catName').value.trim(), type=$('catType').value, unit=$('catUnit').value.trim(), emoji=$('catEmoji').value.trim();
+    if(!id||!name) return toast('id/이름 입력');
+    if(getCat(id)) return toast('이미 존재');
+    var cat={id:id,name:name,type:type,emoji:emoji};
+    if(type==='metric'){ cat.unit=unit; cat.scores={}; cat.updated={}; }
+    DATA.categories.push(cat); $('catId').value='';$('catName').value='';$('catUnit').value='';$('catEmoji').value='';
+    save(); fillCats(); renderHero(); renderList(); toast('추가됨');
+  });
+  $('editCat').addEventListener('change', function(){ fillEditor(this.value); });
+  $('editRefresh').addEventListener('click', function(){ fillEditor($('editCat').value); });
+
+  // init
+  if(sessionStorage.getItem('admin')==='1') $('badgeAdmin').classList.remove('hidden');
+  renderHero();
+  var cur = getURLCat(); if(cur){ showPage(); renderList(); } else { showHero(); }
+
+})();</script>
+</body>
+</html>
