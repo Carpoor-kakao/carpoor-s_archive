@@ -187,7 +187,12 @@
     <div id="editArea"></div>
 
     
-    <div style="font-weight:700;margin:14px 0 6px">신규 요청 관리</div>
+    <div style="font-weight:700;margin:14px 0 6px">방명록 관리 <span id="gbRemoteBadge" class="badge" style="margin-left:6px">원격저장: 확인 중</span></div>
+<div id="gbAdminList" style="max-height:220px;overflow:auto;margin-bottom:8px"></div>
+<div class="row" style="gap:6px;margin-bottom:16px">
+  <button class="btn" id="gbDelAll">방명록 전체 삭제</button>
+</div>
+<div style="font-weight:700;margin:14px 0 6px">신규 요청 관리</div>
     <div class="row" style="gap:6px;margin-bottom:8px">
       <select id="reqCatSel"></select>
       <button class="btn" id="reqDelAll">선택 카테고리 전체 삭제</button>
@@ -484,7 +489,64 @@
     var opts = DATA.categories.map(function(c){ return '<option value="'+c.id+'">'+c.name+'</option>'; }).join('');
     selEl.innerHTML = opts;
   }
-  function adminRenderReqs(){
+  
+  // --- Admin: Guestbook management ---
+  function adminRenderGb(){
+    var wrap = document.getElementById('gbAdminList'); if(!wrap) return;
+    // Badge
+    var b = document.getElementById('gbRemoteBadge');
+    if(b) b.textContent = '원격저장: ' + (isRemoteGuest() ? '켜짐' : '꺼짐');
+    if(isRemoteGuest()){
+      wrap.innerHTML = '<div class="muted">불러오는 중...</div>';
+      apiGet({type:'guestbook', action:'list'}).then(function(data){
+        var list = Array.isArray(data.items) ? data.items : [];
+        if(!list.length){ wrap.innerHTML = '<div class="muted">글 없음</div>'; return; }
+        wrap.innerHTML = list.map(function(g){
+          return '<div style="border:1px solid var(--line);background:#12162b;border-radius:10px;padding:8px 10px;margin-bottom:8px">'
+               +   '<div style="display:flex;justify-content:space-between;align-items:center">'
+               +     '<div><strong>'+ (g.name||'익명') +'</strong> <span class="muted" style="font-size:12px">'+ (g.time||'') +'</span></div>'
+               +     '<button class="btn" data-gbid="'+(g.id||'')+'">삭제</button>'
+               +   '</div>'
+               +   '<div style="margin-top:6px">'+ (g.text||'') +'</div>'
+               + '</div>';
+        }).join('');
+        Array.prototype.forEach.call(document.querySelectorAll('[data-gbid]'), function(btn){
+          btn.addEventListener('click', function(){
+            var id = btn.getAttribute('data-gbid');
+            if(!id) return;
+            if(!confirm('정말 삭제할까요?')) return;
+            apiPost({type:'guestbook', action:'delete', id:id}).then(function(){ adminRenderGb(); }).catch(function(){ toast('원격 삭제 실패'); });
+          });
+        });
+      }).catch(function(){ wrap.innerHTML = '<div class="muted">불러오기 실패</div>'; });
+      return;
+    }
+    // Local fallback
+    var items = gbLoad();
+    if(!items.length){ wrap.innerHTML = '<div class="muted">글 없음</div>'; return; }
+    wrap.innerHTML = items.map(function(g, i){
+      return '<div style="border:1px solid var(--line);background:#12162b;border-radius:10px;padding:8px 10px;margin-bottom:8px">'
+           +   '<div style="display:flex;justify-content:space-between;align-items:center">'
+           +     '<div><strong>'+ esc(g.name||"익명") +'</strong> <span class="muted" style="font-size:12px">'+ esc(g.time||"") +'</span></div>'
+           +     '<button class="btn" data-gbidx="'+i+'">삭제</button>'
+           +   '</div>'
+           +   '<div style="margin-top:6px">'+ esc(g.text||"") +'</div>'
+           + '</div>';
+    }).join('');
+    Array.prototype.forEach.call(document.querySelectorAll('[data-gbidx]'), function(btn){
+      btn.addEventListener('click', function(){
+        var idx = Number(btn.getAttribute('data-gbidx'));
+        var arr = gbLoad();
+        if(idx>=0 && idx<arr.length){
+          if(!confirm('정말 삭제할까요?')) return;
+          arr.splice(idx,1); gbSave(arr);
+          adminRenderGb();
+        }
+      });
+    });
+  }
+
+function adminRenderReqs(){
     var sel = document.getElementById('reqCatSel'); if(!sel) return;
     var cid = sel.value || (DATA.categories[0] ? DATA.categories[0].id : 'profile');
     var wrap = document.getElementById('reqAdminList'); if(!wrap) return;
@@ -758,7 +820,7 @@
   document.getElementById('dlgAdminClose').addEventListener('click', function(){ document.getElementById('dlgAdmin').close(); });
   document.getElementById('adminLogout').addEventListener('click', function(){ setAdmin(false); document.getElementById('dlgAdmin').close(); });
   document.addEventListener('change', function(e){ if(e.target && e.target.id==='reqCatSel'){ adminRenderReqs(); } });
-  document.addEventListener('click', function(e){ if(e.target && e.target.id==='reqDelAll'){ var sel=document.getElementById('reqCatSel'); if(!sel) return; var cid=sel.value; if(!cid) return; if(!confirm('정말로 이 카테고리의 요청을 모두 삭제할까요?')) return; if(isRemoteReq()){ apiPost({type:'requests', action:'delete_all', category:cid}).then(function(){ adminRenderReqs(); if(getURLCat()===cid){ renderReqs(cid); } }).catch(function(){ toast('원격 전체 삭제 실패'); }); } else { saveReqs(cid, []); adminRenderReqs(); if(getURLCat()===cid){ renderReqs(cid); } } } });
+  document.addEventListener('click', function(e){ if(e.target && e.target.id==='gbDelAll'){ if(!confirm('방명록을 모두 삭제할까요?')) return; if(isRemoteGuest()){ apiPost({type:'guestbook', action:'delete_all'}).then(function(){ adminRenderGb(); }).catch(function(){ toast('원격 전체 삭제 실패'); }); } else { gbSave([]); adminRenderGb(); } } if(e.target && e.target.id==='reqDelAll'){ var sel=document.getElementById('reqCatSel'); if(!sel) return; var cid=sel.value; if(!cid) return; if(!confirm('정말로 이 카테고리의 요청을 모두 삭제할까요?')) return; if(isRemoteReq()){ apiPost({type:'requests', action:'delete_all', category:cid}).then(function(){ adminRenderReqs(); if(getURLCat()===cid){ renderReqs(cid); } }).catch(function(){ toast('원격 전체 삭제 실패'); }); } else { saveReqs(cid, []); adminRenderReqs(); if(getURLCat()===cid){ renderReqs(cid); } } } });
 
   // Init
   if(sessionStorage.getItem('admin')==='1') document.getElementById('badgeAdmin').classList.remove('hidden');
