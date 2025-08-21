@@ -287,7 +287,9 @@
     wrap.innerHTML = htmlStr || '<div class="muted">아직 글이 없습니다. 첫 글을 남겨보세요!</div>';
     wrap.scrollTop = wrap.scrollHeight;
   }
-
+    wrap.innerHTML = html || '<div class="muted">아직 글이 없습니다. 첫 글을 남겨보세요!</div>';
+    wrap.scrollTop = wrap.scrollHeight;
+  }
   function gbAdd(name, text){
     if(isRemoteGuest()){
       apiPost({type:'guestbook', action:'add', name:name||'익명', text:text||''})
@@ -492,6 +494,72 @@
       apiGet({type:'requests', action:'list', category:cid}).then(function(data){
         var list = Array.isArray(data.items)? data.items : [];
         if(!list.length){ wrap.innerHTML='<div class="muted">요청 없음</div>'; return; }
+        wrap.innerHTML = list.map(function(r,i){
+          return '<div style="border:1px solid var(--line);background:#12162b;border-radius:10px;padding:8px 10px;margin-bottom:8px">'
+               +   '<div style="display:flex;justify-content:space-between;align-items:center">'
+               +     '<div><strong>'+ (r.name||'익명') +'</strong> <span class="muted" style="font-size:12px">'+ (r.time||'') +'</span></div>'
+               +     '<button class="btn" data-rmid="'+(r.id||'')+'" data-rmdx="'+i+'">삭제</button>'
+               +   '</div>'
+               +   '<div style="margin-top:6px">'+ (r.text||'') +'</div>'
+               + '</div>';
+        }).join('');
+        Array.prototype.forEach.call(document.querySelectorAll('[data-rmid]'), function(b){
+          b.addEventListener('click', function(){
+            var id=b.getAttribute('data-rmid'); if(!id) return;
+            apiPost({type:'requests', action:'delete', id:id, category:cid}).then(function(){ adminRenderReqs(); if(getURLCat()===cid){ renderReqs(cid); } }).catch(function(){ toast('원격 삭제 실패'); });
+          });
+        });
+      }).catch(function(){ wrap.innerHTML = '<div class="muted">불러오기 실패</div>'; });
+      return;
+    }
+    var list = loadReqs(cid);
+    if(!list.length){
+      wrap.innerHTML = '<div class="muted">요청 없음</div>';
+    }else{
+      wrap.innerHTML = list.map(function(r,i){
+        return '<div style="border:1px solid var(--line);background:#12162b;border-radius:10px;padding:8px 10px;margin-bottom:8px">'
+             +   '<div style="display:flex;justify-content:space-between;align-items:center">'
+             +     '<div><strong>'+ (r.name || '익명') +'</strong> <span class="muted" style="font-size:12px">'+ (r.date||'') +'</span></div>'
+             +     '<button class="btn" data-rmdx="'+i+'">삭제</button>'
+             +   '</div>'
+             +   '<div style="margin-top:6px">'+ (r.text||'') +'</div>'
+             + '</div>';
+      }).join('');
+      Array.prototype.forEach.call(document.querySelectorAll('[data-rmdx]'), function(b){
+        b.addEventListener('click', function(){
+          var idx = Number(b.getAttribute('data-rmdx'));
+          var arr = loadReqs(cid);
+          if(idx>=0 && idx < arr.length){
+            arr.splice(idx,1); saveReqs(cid, arr);
+            adminRenderReqs();
+            if(getURLCat()===cid){ renderReqs(cid); }
+          }
+        });
+      });
+    }
+  }
+    wrap.innerHTML = list.map(function(r,i){
+      return '<div style="border:1px solid var(--line);background:#12162b;border-radius:10px;padding:8px 10px;margin-bottom:8px">'
+           +   '<div style="display:flex;justify-content:space-between;align-items:center">'
+           +     '<div><strong>'+ (r.name || '익명') +'</strong> <span class="muted" style="font-size:12px">'+ (r.date||'') +'</span></div>'
+           +     '<button class="btn" data-rmdx="'+i+'">삭제</button>'
+           +   '</div>'
+           +   '<div style="margin-top:6px">'+ (r.text||'') +'</div>'
+           + '</div>';
+    }).join('');
+    Array.prototype.forEach.call(document.querySelectorAll('[data-rmdx]'), function(b){
+      b.addEventListener('click', function(){
+        var idx = Number(b.getAttribute('data-rmdx'));
+        var arr = loadReqs(cid);
+        if(idx>=0 && idx<arr.length){
+          arr.splice(idx,1); saveReqs(cid, arr);
+          adminRenderReqs();
+          if(getURLCat()===cid){ renderReqs(cid); }
+        }
+      });
+    });
+  }
+
   function renderReqs(catId){
     var wrap = document.getElementById('reqList');
     if(!wrap) return;
