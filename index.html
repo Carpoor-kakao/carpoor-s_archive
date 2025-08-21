@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>우리 랭킹</title>
+  <style>
+    :root { --bg:#0b1020; --panel:#0f1630; --text:#e8ecf8; --muted:#9fb2d0; --brand:#6aa1ff; --accent:#7cf7d4; --warn:#ffd166; }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;background:linear-gradient(180deg,#0b1020,#0a0e1b 50%,#0b1020);color:var(--text)}
+    header{position:sticky;top:0;z-index:5;background:rgba(11,16,32,.7);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.08)}
+    .wrap{max-width:980px;margin:0 auto;padding:16px}
+    h1{margin:0;font-size:24px;letter-spacing:.2px}
+    .subtitle{color:var(--muted);font-size:14px}
+    .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:10px}
+    .pill{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);padding:8px 12px;border-radius:999px;color:var(--text);display:inline-flex;gap:8px;align-items:center}
+    .btn{cursor:pointer;border:none;border-radius:12px;padding:10px 14px;background:var(--panel);color:var(--text);border:1px solid rgba(255,255,255,.08)}
+    .btn:hover{background:#131b3a}
+    .btn.primary{background:linear-gradient(180deg,#6aa1ff,#4f86ff);border-color:#3d6fe3}
+    .grid{display:grid;grid-template-columns:1fr;gap:16px;margin-top:16px}
+    @media (min-width:720px){.grid{grid-template-columns: 3fr 2fr}}
+    .card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px}
+    .card h3{margin:0 0 8px 0}
+    select, input[type="text"]{background:#0e152f;color:var(--text);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px;min-width:180px}
+    table{width:100%;border-collapse:separate;border-spacing:0 8px}
+    th{font-size:12px;color:var(--muted);text-align:left;padding:0 12px}
+    td{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);padding:12px;border-left:0;border-right:0}
+    tr td:first-child{border-top-left-radius:10px;border-bottom-left-radius:10px;border-left:1px solid rgba(255,255,255,.08)}
+    tr td:last-child{border-top-right-radius:10px;border-bottom-right-radius:10px;border-right:1px solid rgba(255,255,255,.08)}
+    .medal{display:inline-block;min-width:26px;text-align:center;border-radius:8px;padding:4px 6px;font-weight:700}
+    .gold{background:linear-gradient(180deg,#ffd166,#ffc14d);color:#4a3700}
+    .silver{background:linear-gradient(180deg,#e6eef7,#d9e1ee);color:#2e3947}
+    .bronze{background:linear-gradient(180deg,#e6b089,#d79562);color:#4a2d15}
+    .muted{color:var(--muted)}
+    .footer{color:var(--muted);font-size:12px;margin-top:16px}
+    dialog{border:1px solid rgba(255,255,255,.15);border-radius:16px;background:#0d142b;color:var(--text);padding:0}
+    .modal-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.1)}
+    .modal-body{padding:16px}
+    .qr-box{display:flex;justify-content:center;padding:16px;border-radius:12px;background:rgba(255,255,255,.04)}
+    .copy{display:flex;gap:8px;margin-top:10px}
+    .tag{font-size:12px;color:var(--muted);border:1px solid rgba(255,255,255,.15);padding:4px 8px;border-radius:999px}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>우리 랭킹</h1>
+      <div class="subtitle">친구들과 항목별 점수를 깔끔하게 비교하기</div>
+      <div class="row">
+        <label class="pill">
+          항목
+          <select id="categorySelect" aria-label="항목 선택"></select>
+        </label>
+        <label class="pill">
+          정렬
+          <select id="sortSelect" aria-label="정렬 선택">
+            <option value="desc">점수 높은 순</option>
+            <option value="asc">점수 낮은 순</option>
+          </select>
+        </label>
+        <label class="pill">
+          검색
+          <input type="text" id="searchInput" placeholder="이름 검색" />
+        </label>
+        <button class="btn" id="copyLinkBtn">링크 복사</button>
+        <button class="btn primary" id="qrBtn">QR 코드</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap grid">
+    <section class="card" id="rankCard">
+      <h3 id="catTitle">항목</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>순위</th>
+            <th>이름</th>
+            <th>점수</th>
+            <th>업데이트</th>
+          </tr>
+        </thead>
+        <tbody id="rankBody"></tbody>
+      </table>
+      <div class="footer">
+        URL 매개변수 <code>?cat=슬러그</code> 로 특정 항목을 바로 열 수 있어요.
+        예: <span class="tag">?cat=push-ups</span>
+      </div>
+    </section>
+
+    <aside class="card">
+      <h3>빠른 편집</h3>
+      <p class="muted">아래의 <b>DATA</b> 섹션만 수정하면 누구나 바로 사용 가능해요.</p>
+      <ol class="muted">
+        <li>코드 하단의 <b>DATA</b>를 여러분의 친구/항목으로 바꾸세요.</li>
+        <li>원하는 곳에 업로드(예: GitHub Pages, Netlify).</li>
+        <li>상단의 <b>QR 코드</b> 버튼으로 접속용 QR 생성.</li>
+      </ol>
+      <div style="height:12px"></div>
+      <div class="tag">팁</div>
+      <p class="muted">파일로 열 때는 QR이 <code>file://</code> 주소일 수 있어요. 배포 후 다시 생성하세요.</p>
+    </aside>
+  </main>
+
+  <dialog id="qrModal">
+    <div class="modal-head">
+      <strong>QR로 접속하기</strong>
+      <button class="btn" id="closeQr">닫기</button>
+    </div>
+    <div class="modal-body">
+      <div class="copy">
+        <input type="text" id="shareUrl" style="flex:1" readonly>
+        <button class="btn" id="copyFromModal">복사</button>
+      </div>
+      <div class="qr-box"><div id="qrcode"></div></div>
+    </div>
+  </dialog>
+
+  <script>
+    /**
+     * ====== DATA (이 부분만 바꿔서 쓰세요) ======
+     * people: 친구 이름 목록
+     * categories: 항목별 점수(숫자). updated는 "YYYY-MM-DD" 권장.
+     */
+    const DATA = {
+      people: ["민수", "지연", "수현", "태호", "루카"],
+      categories: [
+        {
+          id: "push-ups",
+          name: "팔굽혀펴기(1분)",
+          scores: { "민수": 45, "지연": 38, "수현": 52, "태호": 41, "루카": 42 },
+          updated: { "민수": "2025-08-10", "지연": "2025-08-12", "수현": "2025-08-15", "태호": "2025-08-11", "루카": "2025-08-09" }
+        },
+        {
+          id: "mariokart",
+          name: "마리오카트(평균 순위)",
+          desc: "낮을수록 우수",
+          lowerIsBetter: true,
+          scores: { "민수": 2.3, "지연": 1.9, "수현": 3.7, "태호": 2.8, "루카": 4.1 },
+          updated: { "민수": "2025-07-28", "지연": "2025-07-28", "수현": "2025-07-29", "태호": "2025-07-30", "루카": "2025-07-25" }
+        },
+        {
+          id: "coding-quiz",
+          name: "코딩 퀴즈(점수)",
+          scores: { "민수": 88, "지연": 94, "수현": 82, "태호": 90, "루카": 77 },
+          updated: { "민수": "2025-08-01", "지연": "2025-08-03", "수현": "2025-08-02", "태호": "2025-08-04", "루카": "2025-08-01" }
+        }
+      ]
+    };
+    // ====== END DATA ======
+
+    // Helpers
+    const $ = (sel) => document.querySelector(sel);
+    const fmtDate = (d) => d || "-";
+
+    const categorySelect = $("#categorySelect");
+    const sortSelect = $("#sortSelect");
+    const searchInput = $("#searchInput");
+    const rankBody = $("#rankBody");
+    const catTitle = $("#catTitle");
+
+    function populateCategoryOptions(){
+      categorySelect.innerHTML = DATA.categories.map(c=>`<option value="${c.id}">${c.name}</option>`).join("");
+    }
+
+    function getCurrentCat(){
+      const url = new URL(window.location.href);
+      const id = url.searchParams.get("cat") || DATA.categories[0]?.id;
+      return DATA.categories.find(c=>c.id===id) || DATA.categories[0];
+    }
+
+    function setCatInUrl(id){
+      const url = new URL(window.location.href);
+      url.searchParams.set("cat", id);
+      history.replaceState({}, "", url);
+    }
+
+    function render(){
+      const cat = getCurrentCat();
+      if(!cat) return;
+      catTitle.textContent = cat.name;
+      categorySelect.value = cat.id;
+
+      const rows = DATA.people.map(name=>({
+        name,
+        score: Number(cat.scores[name] ?? NaN),
+        updated: cat.updated?.[name] || ""
+      })).filter(r=>!isNaN(r.score));
+
+      const q = searchInput.value.trim().toLowerCase();
+      const filtered = q? rows.filter(r=>r.name.toLowerCase().includes(q)) : rows;
+
+      const dir = (cat.lowerIsBetter? (sortSelect.value==="desc"? "asc":"asc") : sortSelect.value);
+      filtered.sort((a,b)=> dir==="asc"? a.score-b.score : b.score-a.score || a.name.localeCompare(b.name));
+
+      rankBody.innerHTML = filtered.map((r, idx)=>{
+        const i = idx+1;
+        let medal = `<span class="medal">${i}</span>`;
+        if(i===1) medal = `<span class="medal gold">1</span>`;
+        else if(i===2) medal = `<span class="medal silver">2</span>`;
+        else if(i===3) medal = `<span class="medal bronze">3</span>`;
+        return `<tr>
+          <td>${medal}</td>
+          <td>${r.name}</td>
+          <td>${Number.isInteger(r.score)? r.score : r.score.toFixed(2)}</td>
+          <td class="muted">${fmtDate(r.updated)}</td>
+        </tr>`
+      }).join("");
+    }
+
+    categorySelect.addEventListener('change', e=>{ setCatInUrl(e.target.value); render(); });
+    sortSelect.addEventListener('change', render);
+    searchInput.addEventListener('input', render);
+
+    // Share & QR
+    const qrBtn = document.getElementById('qrBtn');
+    const qrModal = document.getElementById('qrModal');
+    const closeQr = document.getElementById('closeQr');
+    const qrcodeBox = document.getElementById('qrcode');
+    const shareUrl = document.getElementById('shareUrl');
+    const copyFromModal = document.getElementById('copyFromModal');
+    const copyLinkBtn = document.getElementById('copyLinkBtn');
+
+    function currentUrl(){ return window.location.href; }
+    async function copy(text){ try{ await navigator.clipboard.writeText(text); toast('복사됨!'); }catch{ alert('복사 실패. 수동으로 복사하세요.'); } }
+
+    function toast(msg){
+      const el = document.createElement('div');
+      el.textContent = msg;
+      el.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:#121a39;color:#fff;border:1px solid rgba(255,255,255,.2);padding:10px 14px;border-radius:10px;z-index:9999;opacity:0;transition:opacity .2s';
+      document.body.appendChild(el);
+      requestAnimationFrame(()=>{ el.style.opacity = 1; });
+      setTimeout(()=>{ el.style.opacity=0; setTimeout(()=>el.remove(),200); }, 1200);
+    }
+
+    qrBtn.addEventListener('click', ()=>{
+      shareUrl.value = currentUrl();
+      qrcodeBox.innerHTML = '';
+      new QRCode(qrcodeBox, { text: currentUrl(), width: 220, height: 220, correctLevel: QRCode.CorrectLevel.M });
+      qrModal.showModal();
+    });
+    closeQr.addEventListener('click', ()=> qrModal.close());
+    copyFromModal.addEventListener('click', ()=> copy(shareUrl.value));
+    copyLinkBtn.addEventListener('click', ()=> copy(currentUrl()));
+
+    // init
+    populateCategoryOptions();
+    render();
+  </script>
+
+  <!-- qrcodejs (davidshimjs) - MIT License: https://github.com/davidshimjs/qrcodejs -->
+  <script>
+  // qrcode.min.js (inlined)
+  // (c) davidshimjs - MIT License
+  !function(o){function t(o){this.mode=s.MODE_8BIT_BYTE,this.data=o,this.parsedData=[];for(var t=0,e=this.data.length;t<e;t++){var i=[],r=this.data.charCodeAt(t);r>65536?(i[0]=240|(1835008&r)>>>18,i[1]=128|(258048&r)>>>12,i[2]=128|(4032&r)>>>6,i[3]=128|63&r):r>2048?(i[0]=224|(61440&r)>>>12,i[1]=128|(4032&r)>>>6,i[2]=128|63&r):r>128?(i[0]=192|(1984&r)>>>6,i[1]=128|63&r):i[0]=r,this.parsedData.push(i)}this.parsedData=Array.prototype.concat.apply([],this.parsedData),this.parsedData.length!=this.data.length&&(this.parsedData.unshift(191),this.parsedData.unshift(187),this.parsedData.unshift(239))}function e(o,t){this.typeNumber=o,this.errorCorrectLevel=t,this.modules=null,this.moduleCount=0,this.dataCache=null,this.dataList=[]}function i(o,t){if(void 0==o.length)throw new Error(o.length+"/"+t);for(var e=0;e<o.length&&0==o[e];)e++;this.num=Array(o.length-e+t);for(var i=0;i<o.length-e;i++)this.num[i]=o[i+e]}function r(o,t){this.totalCount=o,this.dataCount=t}function n(){this.buffer=[],this.length=0}function h(){return"undefined"!=typeof CanvasRenderingContext2D}function u(){var o=!1,t=navigator.userAgent;return/android/i.test(t)&&(o=!0,RegExp("android\\.([0-9]+)\\." ).exec(t)&&RegExp.$1<2),o}function d(o,t){for(var e=1,r=function(o){for(var t=0;t<o.length&&0==o[t];)t++;for(var e=Array(o.length-t),i=0;i<e.length;i++)e[i]=o[i+t];return e}(o),n=r.length;n<=t;n++)r.unshift(0);return r}var s={};s.PAD0=236,s.PAD1=17,s.Mode={MODE_NUMBER:1,MODE_ALPHA_NUM:2,MODE_8BIT_BYTE:4,MODE_KANJI:8},s.ErrorCorrectLevel={L:1,M:0,Q:3,H:2};var a={PATTERN_POSITION_TABLE:[[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],[6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],[6,34,62,90],[6,28,50,72,94],[6,26,50,74,98],[6,30,54,78,102],[6,28,54,80,106],[6,32,58,84,110],[6,30,58,86,114],[6,34,62,90,118],[6,26,50,74,98,122],[6,30,54,78,102,126],[6,26,52,78,104,130],[6,30,56,82,108,134],[6,34,60,86,112,138],[6,30,58,86,114,142],[6,34,62,90,118,146],[6,30,54,78,102,126,150],[6,24,50,76,102,128,154],[6,28,54,80,106,132,158],[6,32,58,84,110,136,162],[6,26,54,82,110,138,166],[6,30,58,86,114,142,170]],G15:1335,G18:7973,G15_MASK:21522,getBCHTypeInfo:function(o){for(var t=o<<10;this.getBCHDigit(t)-this.getBCHDigit(this.G15)>=0;)t^=this.G15<<this.getBCHDigit(t)-this.getBCHDigit(this.G15);return(o<<10|t)^this.G15_MASK},getBCHTypeNumber:function(o){for(var t=o<<12;this.getBCHDigit(t)-this.getBCHDigit(this.G18)>=0;)t^=this.G18<<this.getBCHDigit(t)-this.getBCHDigit(this.G18);return o<<12|t},getBCHDigit:function(o){for(var t=0;0!=o;)t++,o>>>=1;return t},getPatternPosition:function(o){return this.PATTERN_POSITION_TABLE[o-1]},getMask:function(o,t,e){switch(o){case 0:return(t+e)%2==0;case 1:return t%2==0;case 2:return e%3==0;case 3:return(t+e)%3==0;case 4:return(Math.floor(t/2)+Math.floor(e/3))%2==0;case 5:return t*e%2+ t*e%3==0;case 6:return(t*e%2+ t*e%3)%2==0;case 7:return(t*e%3+Math.floor(t/2)+Math.floor(e/3))%2==0;default:throw new Error("bad maskPattern:")+o}},getErrorCorrectPolynomial:function(o){for(var t=new i([1],0),e=0;e<o;e++)t=t.multiply(new i([1,Math.pow(2,e)],0));return t},getLengthInBits:function(o,t){if(t>=1&&t<10)switch(o){case s.Mode.MODE_NUMBER:return 10;case s.Mode.MODE_ALPHA_NUM:return 9;case s.Mode.MODE_8BIT_BYTE:return 8;case s.Mode.MODE_KANJI:return 8;default:throw new Error("mode:")+o}else if(t<27)switch(o){case s.Mode.MODE_NUMBER:return 12;case s.Mode.MODE_ALPHA_NUM:return 11;case s.Mode.MODE_8BIT_BYTE:return 16;case s.Mode.MODE_KANJI:return 10;default:throw new Error("mode:")+o}else{if(!(t<41))throw new Error("type:")+t;switch(o){case s.Mode.MODE_NUMBER:return 14;case s.Mode.MODE_ALPHA_NUM:return 13;case s.Mode.MODE_8BIT_BYTE:return 16;case s.Mode.MODE_KANJI:return 12;default:throw new Error("mode:")+o}}},getLostPoint:function(o){for(var t=o.getModuleCount(),e=0,i=0;i<t;i++)for(var r=0;r<t;r++){for(var n=0,h=o.isDark(i,r),u=-1;u<=1;u++)if(!(i+u<0||t<=i+u))for(var d=-1;d<=1;d++)r+d<0||t<=r+d||0==u&&0==d||h==o.isDark(i+u,r+d)&&n++;n>5&&(e+=3+n-5)}for(i=0;i<t-1;i++)for(r=0;r<t-1;r++){var a=0;o.isDark(i,r)&&a++,o.isDark(i+1,r)&&a++,o.isDark(i,r+1)&&a++,o.isDark(i+1,r+1)&&a++,(0==a||4==a)&&(e+=3)}for(i=0;i<t;i++)for(r=0;r<t-6;r++)o.isDark(i,r)&&!o.isDark(i,r+1)&&o.isDark(i,r+2)&&o.isDark(i,r+3)&&o.isDark(i,r+4)&&!o.isDark(i,r+5)&&o.isDark(i,r+6)&&(e+=40);for(r=0;r<t;r++)for(i=0;i<t-6;i++)o.isDark(i,r)&&!o.isDark(i+1,r)&&o.isDark(i+2,r)&&o.isDark(i+3,r)&&o.isDark(i+4,r)&&!o.isDark(i+5,r)&&o.isDark(i+6,r)&&(e+=40);var l=0;for(r=0;r<t;r++)for(i=0;i<t;i++)o.isDark(i,r)&&l++;return e+=10*(Math.abs(100*l/t/t-50)/5)}},l=function(o){var t=o,e=0,i=0,r=0,n="";return{writeByte:function(o){for(t<<=8,t|=255&o,e+=8;e>=6;)n+="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:"[63&t>>>e-6],e-=6},write:function(o){for(var t=0;t<o.length;t++)this.writeByte(o.charCodeAt(t))},flush:function(){if(e>0&&(n+="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:"[63&t<<6-e],e=0),n.length%4==1&&(n+="==="),n.length%4==2&&(n+="=="),n.length%4==3&&(n+="="),r++,i++)return n}}};
+  function f(o,t){this._el=o,this._htOption=t}
+  f.prototype.draw=function(o){var t=this._el,e=this._htOption;this._el&&(this._el.innerHTML="");var i=document.createElement("canvas");i.width=e.width,i.height=e.height;var r=i.getContext("2d");o.modules.forEach(function(o,t){o.forEach(function(o,n){r.fillStyle=o?"#000":"#fff";var h=Math.floor(e.width/o.length);r.fillRect(n*h,t*h,h,h)})}),t.appendChild(i)};
+  function c(o,t){this._el=o,this._htOption=t,this._oQRCode=null,this._oDrawing=new f(this._el,this._htOption),this.makeCode(this._htOption.text)}
+  c.prototype.makeCode=function(o){this._oQRCode=function(o,t){var i=new e(4,t);i.addData(o),i.make();return i}(o,this._htOption.correctLevel),this._oDrawing.draw(this._oQRCode)};
+  var p={L:1,M:0,Q:3,H:2};
+  function QRCode(o,t){if(this._htOption={width:256,height:256,text:"",correctLevel:p.H},"string"==typeof o&&(o=document.getElementById(o)),this._el=o,void 0!==t)for(var e in t)this._htOption[e]=t[e];this._oQRCode=null,this._oDrawing=null,this._htOption.useSVG?console.warn('SVG 렌더링은 미포함(캔버스 사용)'):null,c.call(this,o,this._htOption)}
+  QRCode.CorrectLevel=p;window.QRCode=QRCode;
+  </script>
+</body>
+</html>
