@@ -236,9 +236,11 @@
   }
   async function apiPost(payload){
     var res = await fetch(REMOTE.url, {
-      method:'POST', mode:'cors',
-      headers:Object.assign({'Content-Type':'application/json'}, REMOTE.headers||{}),
-      body:JSON.stringify(payload)
+      method:'POST',
+      mode:'cors',
+      // Use text/plain to avoid preflight; Apps Script reads e.postData.contents the same.
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify(payload)
     });
     if(!res.ok) throw new Error('POST '+res.status);
     return await res.json();
