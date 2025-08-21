@@ -970,6 +970,54 @@ document.addEventListener('click', function(e){
   if(!gbTick){
     gbTick = setInterval(tick, 500);
   }
+
+/* === Minimal Archive Sync Shim (non-invasive) === */
+(function(){
+  try{ if(typeof REMOTE==='object'){ REMOTE.enableArchive = true; } }catch(_){}
+  function isRemoteArchive(){ try{ return REMOTE && REMOTE.enableArchive && REMOTE.url; } catch(_) { return false; } }
+  function mergeArchive(remote){
+    try{
+      var base = JSON.parse(JSON.stringify(DEFAULT));
+      if(remote && typeof remote==='object'){
+        if(remote.people) base.people = remote.people;
+        if(remote.categories) base.categories = remote.categories;
+        if(remote.profiles) base.profiles = remote.profiles;
+        if(remote.avatars) base.avatars = remote.avatars;
+        if(remote.membersView) base.membersView = remote.membersView;
+      }
+      return base;
+    }catch(e){ return remote || {}; }
+  }
+  async function archivePull(){
+    if(!isRemoteArchive()) return false;
+    try{
+      var res = await apiGet({type:'archive', action:'pull'});
+      if(res && res.data){
+        DATA = mergeArchive(res.data);
+        try{ localStorage.setItem(STORAGE, JSON.stringify(DATA)); }catch(_){}
+        if(typeof renderList==='function'){ renderList(); }
+        return true;
+      }
+    }catch(e){}
+    return false;
+  }
+  async function archivePush(){
+    if(!isRemoteArchive()) return false;
+    if(typeof isAdmin==='function' && !isAdmin()) return false;
+    try{
+      var payload = {type:'archive', action:'push', adminPass: (typeof ADMIN!=='undefined'?ADMIN:''), data: DATA};
+      await apiPost(payload);
+      return true;
+    }catch(e){ return false; }
+  }
+  try{
+    var _save = save;
+    save = function(){ try{ _save(); }catch(_){} archivePush(); };
+  }catch(_){}
+  window.addEventListener('load', function(){
+    setTimeout(function(){ archivePull(); }, 50);
+  });
+})();
 })();
 })();</script>
 </body>
