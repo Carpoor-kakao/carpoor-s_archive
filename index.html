@@ -35,6 +35,13 @@
   /* members grid */
   .mgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
   .mcard{display:flex;align-items:center;gap:10px;background:#12162b;border:1px solid var(--line);border-radius:12px;padding:10px}
+  /* guestbook */
+  .gb-item{display:flex;gap:10px;margin:8px 0}
+  .gb-avatar{width:28px;height:28px;border-radius:50%;background:#0b1030;border:1px solid var(--line)}
+  .gb-bubble{flex:1;border:1px solid var(--line);background:#11162d;border-radius:12px;padding:8px 10px}
+  .gb-meta{display:flex;gap:8px;align-items:center;font-size:11px;color:var(--muted);margin-bottom:4px}
+  .gb-msg{white-space:pre-wrap;word-break:break-word}
+
   /* admin modal basic */
   dialog{border:1px solid var(--line);border-radius:14px;background:#0f1324;color:var(--text);padding:0}
   dialog .head{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding:12px 14px}
@@ -68,6 +75,25 @@
     <div class="panel">
       <div style="font-size:20px;font-weight:800">무엇을 보러 왔느냐</div>
       <div class="grid" id="heroGrid"></div>
+    </div>
+  </div>
+</section>
+
+<section class="guest" id="guest">
+  <div class="container">
+    <div class="panel">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <div style="font-size:18px;font-weight:800">방명록</div>
+        <div class="muted" id="gbCount" style="font-size:12px"></div>
+      </div>
+      <div style="margin-top:10px">
+        <div class="row" style="gap:8px;align-items:flex-start;flex-wrap:wrap">
+          <input id="gbName" placeholder="이름 (선택)" style="min-width:180px">
+          <textarea id="gbText" rows="2" placeholder="하고 싶은 말을 남겨주세요..." style="flex:1 1 320px;min-height:44px"></textarea>
+          <button class="btn" id="gbSend">등록</button>
+        </div>
+      </div>
+      <div id="gbList" class="gb-list" style="margin-top:12px;max-height:380px;overflow:auto"></div>
     </div>
   </div>
 </section>
@@ -184,6 +210,45 @@
   function copy(t){ if(navigator.clipboard){ navigator.clipboard.writeText(t).then(function(){ toast('복사됨'); }); } }
   function toast(m){ var el=document.createElement('div'); el.textContent=m; el.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:#141a33;color:#fff;border:1px solid rgba(255,255,255,.2);padding:8px 10px;border-radius:8px;z-index:9999'; document.body.appendChild(el); setTimeout(function(){ document.body.removeChild(el); }, 1200); }
   function today(){ var d=new Date(); return d.toISOString().slice(0,10); }
+  // guestbook helpers
+  var GUEST_KEY = "guestbook_v1";
+  function gbLoad(){ try{ return JSON.parse(localStorage.getItem(GUEST_KEY)||"[]"); }catch(e){ return []; } }
+  function gbSave(arr){ localStorage.setItem(GUEST_KEY, JSON.stringify(arr)); }
+  function esc(s){ return (s||"").replace(/[&<>]/g,function(ch){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[ch]; }); }
+  function renderGuest(){
+    var list = gbLoad();
+    var wrap = document.getElementById('gbList');
+    document.getElementById('gbCount').textContent = list.length ? (list.length + '개 글') : '';
+    var html = '';
+    for(var i=0;i<list.length;i++){
+      var it = list[i];
+      var initials = esc((it.name||'').trim().slice(0,1)||'익');
+      html += '<div class="gb-item">'
+           + '<div class="gb-avatar" title="'+esc(it.name||'익명')+'"></div>'
+           + '<div class="gb-bubble">'
+           +   '<div class="gb-meta"><strong>'+esc(it.name||'익명')+'</strong><span>'+esc(it.time||'')+'</span></div>'
+           +   '<div class="gb-msg">'+esc(it.text||'')+'</div>'
+           + '</div></div>';
+    }
+    wrap.innerHTML = html || '<div class="muted">아직 글이 없습니다. 첫 글을 남겨보세요!</div>';
+    wrap.scrollTop = wrap.scrollHeight;
+  }
+  function gbAdd(name, text){
+    var arr = gbLoad();
+    arr.push({name:name||'익명', text:text||'', time:new Date().toLocaleString()});
+    gbSave(arr);
+    renderGuest();
+  }
+
+  // number helpers
+  function parseNum(s){ if(s==null) return null; s=(''+s).trim(); if(!s) return null; s=s.replace(/[\,\s]/g,''); var n=Number(s); return isNaN(n)? null : n; }
+  function fmt(n){
+    if(n==null || n==='') return '-';
+    var num=Number(n); if(isNaN(num)) return '-';
+    var hasDecimal = Math.abs(num) % 1 !== 0;
+    try{ return num.toLocaleString('ko-KR', hasDecimal? {maximumFractionDigits:2} : undefined); }
+    catch(e){ return String(num); }
+  }
 
   // === Data ===
   var DEFAULT = {
@@ -257,8 +322,8 @@
     });
   }
 
-  function showHero(){ $('hero').style.display='block'; $('page').style.display='none'; $('btnHome').classList.add('hidden'); }
-  function showPage(){ $('hero').style.display='none'; $('page').style.display='block'; $('btnHome').classList.remove('hidden'); }
+  function showHero(){ $('hero').style.display='block'; $('guest').style.display='block'; $('page').style.display='none'; $('btnHome').classList.add('hidden'); }
+  function showPage(){ $('hero').style.display='none'; $('guest').style.display='none'; $('page').style.display='block'; $('btnHome').classList.remove('hidden'); }
 
   function renderList(){
     var catId = getURLCat() || (DATA.categories[0] ? DATA.categories[0].id : 'profile');
@@ -307,7 +372,7 @@
       });
       $('tbody').innerHTML = rows.map(function(r,i){
         var medal = (i===0?'<span style="background:#ffd166;color:#3a2b00;padding:3px 6px;border-radius:8px;font-weight:800">1</span>':i===1?'<span style="background:#e6eef7;color:#263246;padding:3px 6px;border-radius:8px;font-weight:800">2</span>':i===2?'<span style="background:#e6b089;color:#3a2312;padding:3px 6px;border-radius:8px;font-weight:800">3</span>':'<span class="muted">'+(i+1)+'</span>');
-        var v = (r.value==null?'-':(Math.round(r.value*100)/100));
+        var v = fmt(r.value);
         var av = avatar(r.name);
         return '<tr><td>'+medal+'</td><td><span class="name">'+(av?'<img class="avatar" src="'+av+'">':'')+'<span>'+r.name+'</span></span></td><td>'+v+'</td><td class="muted">'+(r.updated||'-')+'</td></tr>';
       }).join('');
@@ -502,13 +567,13 @@
       document.getElementById('btnAddFromPeople').onclick=function(){
         var nm=document.getElementById('candFromPeople').value; var val=document.getElementById('candValue').value.trim(); if(nm==='') return;
         if(!c.scores) c.scores={}; if(!c.updated) c.updated={};
-        c.scores[nm] = (val===''? null : Number(val)); c.updated[nm] = today();
+        var num=parseNum(val); c.scores[nm] = (num===null? null : num); c.updated[nm] = today();
         save(); fillEditor(catId); renderList(); toast('추가됨');
       };
       document.getElementById('btnAddManual').onclick=function(){
         var nm=document.getElementById('manualName').value.trim(); var val=document.getElementById('manualValue').value.trim(); if(!nm) return;
         if(!c.scores) c.scores={}; if(!c.updated) c.updated={};
-        c.scores[nm] = (val===''? null : Number(val)); c.updated[nm] = today();
+        var num=parseNum(val); c.scores[nm] = (num===null? null : num); c.updated[nm] = today();
         document.getElementById('manualName').value=''; document.getElementById('manualValue').value='';
         save(); fillEditor(catId); renderList(); toast('추가됨');
       };
@@ -524,7 +589,7 @@
           var q=function(k){ return document.querySelector('input[data-n="'+name+'"][data-k="'+k+'"]'); };
           if(!q('value')) return;
           var v=q('value').value.trim(); var u=q('updated').value.trim();
-          if(v===''){ delete c.scores[name]; } else { c.scores[name]=Number(v); }
+          var num=parseNum(v); if(num===null){ delete c.scores[name]; } else { c.scores[name]=num; }
           if(u===''){ delete c.updated[name]; } else { c.updated[name]=u; }
         });
         save(); renderList(); toast('저장됨');
@@ -535,7 +600,7 @@
   // Events
   document.getElementById('selCat').addEventListener('change', function(){ openCat(this.value); });
   document.getElementById('selSort').addEventListener('change', renderList);
-  document.getElementById('btnHome').addEventListener('click', function(){ var u=new URL(location.href); u.searchParams.delete('cat'); history.replaceState({},'',u); showHero(); });
+  document.getElementById('btnHome').addEventListener('click', function(){ var u=new URL(location.href); u.searchParams.delete('cat'); history.replaceState({},'',u); showHero(); renderGuest(); });
   document.getElementById('btnCopy').addEventListener('click', function(){ copy(location.href); });
   document.getElementById('btnUpdates').addEventListener('click', function(){
     var items = collectUpdates();
@@ -554,8 +619,24 @@
   // Init
   if(sessionStorage.getItem('admin')==='1') document.getElementById('badgeAdmin').classList.remove('hidden');
   renderHero();
-  var cur = getURLCat(); if(cur){ showPage(); renderList(); } else { showHero(); }
+  var cur = getURLCat(); if(cur){ showPage(); renderList(); } else { showHero(); renderGuest(); }
 
+
+  // guestbook events
+  var gbSend = document.getElementById('gbSend');
+  if(gbSend){
+    gbSend.addEventListener('click', function(){
+      var name = document.getElementById('gbName').value.trim();
+      var text = document.getElementById('gbText').value.trim();
+      if(!text){ toast('내용을 입력하세요'); return; }
+      gbAdd(name, text);
+      document.getElementById('gbText').value='';
+    });
+    document.getElementById('gbText').addEventListener('keydown', function(e){
+      if((e.ctrlKey || e.metaKey) && e.key==='Enter'){ gbSend.click(); }
+    });
+  }
+  renderGuest();
 })();</script>
 </body>
 </html>
