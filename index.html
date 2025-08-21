@@ -192,6 +192,11 @@
 <div class="row" style="gap:6px;margin-bottom:16px">
   <button class="btn" id="gbDelAll">방명록 전체 삭제</button>
 </div>
+<div style="font-weight:700;margin:14px 0 6px">방명록 관리 <span id="gbRemoteBadge" class="badge" style="margin-left:6px">원격저장: 확인 중</span></div>
+<div id="gbAdminList" style="max-height:220px;overflow:auto;margin-bottom:8px"></div>
+<div class="row" style="gap:6px;margin-bottom:16px">
+  <button class="btn" id="gbDelAll">방명록 전체 삭제</button>
+</div>
 <div style="font-weight:700;margin:14px 0 6px">신규 요청 관리</div>
     <div class="row" style="gap:6px;margin-bottom:8px">
       <select id="reqCatSel"></select>
@@ -256,13 +261,30 @@
   function gbLoad(){ try{ return JSON.parse(localStorage.getItem(GUEST_KEY)||"[]"); }catch(e){ return []; } }
   function gbSave(arr){ localStorage.setItem(GUEST_KEY, JSON.stringify(arr)); }
   function esc(s){ return (s||"").replace(/[&<>]/g,function(ch){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[ch]; }); }
-  function renderGuest(){
+  
+// Helper: apply ::mod:: visibility rules to guestbook list
+function applyGuestbookVisibility(list){
+  try{
+    var controls = list.filter(function(it){ return (it.name||'')==='::mod::'; });
+    var messages = list.filter(function(it){ return (it.name||'')!=='::mod::'; });
+    var hidden = {};
+    controls.forEach(function(c){
+      var t=(c.text||'').trim();
+      var m=t.match(/^(hide|show):(.+)$/);
+      if(m){ hidden[m[2]] = (m[1]==='hide'); }
+    });
+    return messages.filter(function(m){ return !hidden[m.id]; });
+  }catch(e){ return list; }
+}
+
+function renderGuest(){
     var wrap = document.getElementById('gbList');
     if(!wrap) return;
     if(isRemoteGuest()){
       wrap.innerHTML = '<div class="muted">불러오는 중...</div>';
       apiGet({type:'guestbook', action:'list'}).then(function(data){
-        var list = Array.isArray(data.items)? data.items : [];
+        var list = Array.isArray(data.items) ? data.items : [];
+        list = applyGuestbookVisibility(list);
         document.getElementById('gbCount').textContent = list.length ? (list.length + '개 글') : '';
         var html = list.map(function(it){
           return '<div class="gb-item">'
@@ -336,9 +358,7 @@
     var raw = localStorage.getItem(STORAGE);
     if(raw){
       var saved = JSON.parse(raw);
-      if(saved.people && saved.people.length){
-        var set={}; DEFAULT.people.concat(saved.people).forEach(function(n){ if(n) set[n]=1; }); DATA.people=Object.keys(set);
-      }
+      if(saved.people && saved.people.length){ DATA.people = Array.from(new Set(saved.people)); }
       if(saved.categories && saved.categories.length){
         var byId={}; DEFAULT.categories.forEach(function(c){byId[c.id]=c;});
         saved.categories.forEach(function(c){ if(c && c.id){ byId[c.id]=Object.assign({scores:{},updated:{}}, byId[c.id]||{}, c); } });
@@ -403,7 +423,7 @@
     if(cat && cat.type==='profile'){
       $('wrapSort').style.display='none';
       $('thead').innerHTML = '<tr><th>이름</th></tr>';
-      var names = unionPeople();
+      var names = Object.keys(DATA.profiles||{});
       $('tbody').innerHTML = names.map(function(name){
         var av = avatar(name);
         return '<tr><td><button class="name" data-open="'+name+'" style="all:unset;cursor:pointer">'+(av?'<img class="avatar" src="'+av+'">':'')+'<span>'+name+'</span></button></td></tr>';
@@ -427,10 +447,13 @@
     else{
       $('wrapSort').style.display='';
       $('thead').innerHTML = '<tr><th>순위</th><th>이름</th><th>값</th><th>업데이트</th></tr>';
-      var rows = unionPeople().map(function(name){
-        var v = (cat && cat.scores) ? cat.scores[name] : null;
-        return {name:name,value:(v!=null?Number(v):null),updated:(cat && cat.updated ? cat.updated[name] : '')};
-      });
+      var baseNames = Object.keys((cat && cat.scores) || {}).filter(function(n){
+  return (cat.scores[n] != null && cat.scores[n] !== '');
+});
+var rows = baseNames.map(function(name){
+  var v = cat.scores[name];
+  return {name:name, value:(v!=null?Number(v):null), updated:(cat && cat.updated ? cat.updated[name] : '')};
+});
       var dir = $('selSort').value;
       rows.sort(function(a,b){
         var av = (a.value==null?-1e15:a.value), bv=(b.value==null?-1e15:b.value);
@@ -500,6 +523,7 @@
       wrap.innerHTML = '<div class="muted">불러오는 중...</div>';
       apiGet({type:'guestbook', action:'list'}).then(function(data){
         var list = Array.isArray(data.items) ? data.items : [];
+        list = applyGuestbookVisibility(list);
         if(!list.length){ wrap.innerHTML = '<div class="muted">글 없음</div>'; return; }
         wrap.innerHTML = list.map(function(g){
           return '<div style="border:1px solid var(--line);background:#12162b;border-radius:10px;padding:8px 10px;margin-bottom:8px">'
@@ -860,6 +884,93 @@ function adminRenderReqs(){
       document.body.appendChild(el); setTimeout(function(){ el.remove(); }, 6000);
     }catch(e){}
   });
+
+// Admin enhancement: toggle guestbook visibility without backend change
+function decorateGbAdmin(){
+  var wrap = document.getElementById('gbAdminList');
+  if(!wrap) return;
+  if(!isRemoteGuest()){ return; }
+  wrap.innerHTML = '<div class="muted">불러오는 중...</div>';
+  apiGet({type:'guestbook', action:'list'}).then(function(data){
+    var list = Array.isArray(data.items) ? data.items : [];
+    var controls = list.filter(function(it){ return (it.name||'')==='::mod::'; });
+    var hidden = {};
+    controls.forEach(function(c){
+      var t=(c.text||'').trim(); var m=t.match(/^(hide|show):(.+)$/);
+      if(m){ hidden[m[2]] = (m[1]==='hide'); }
+    });
+    var msgs = list.filter(function(it){ return (it.name||'')!=='::mod::'; });
+    wrap.innerHTML = msgs.map(function(g){
+      var isHidden = !!hidden[g.id];
+      var toggleLabel = isHidden ? '표시' : '숨김';
+      return '<div style="border:1px solid var(--line);background:#12162b;border-radius:10px;padding:8px 10px;margin-bottom:8px">'
+           +   '<div style="display:flex;justify-content:space-between;align-items:center">'
+           +     '<div><strong>'+ (g.name||'익명') +'</strong> <span class="muted" style="font-size:12px">'+ (g.time||'') +'</span></div>'
+           +     '<div><button class="btn" data-gb-toggle="'+(g.id||'')+'">'+ toggleLabel +'</button></div>'
+           +   '</div>'
+           +   '<div style="margin-top:6px">'+ (g.text||'') +'</div>'
+           + '</div>';
+    }).join('') || '<div class="muted">글 없음</div>';
+  }).catch(function(){ wrap.innerHTML = '<div class="muted">불러오기 실패</div>'; });
+}
+
+// Global delegate for toggle button
+document.addEventListener('click', function(e){
+  var t = e.target;
+  if(t && t.getAttribute && t.hasAttribute('data-gb-toggle')){
+    var id = t.getAttribute('data-gb-toggle');
+    if(!id) return;
+    var doHide = (t.textContent.trim()==='숨김'); // if currently '숨김' -> write hide
+    apiPost({type:'guestbook', action:'add', name:'::mod::', text:(doHide? 'hide:' : 'show:') + id})
+      .then(function(){ decorateGbAdmin(); renderGuest(); })
+      .catch(function(){ toast('원격 토글 실패'); });
+  }
+});
+
+
+/* === Guestbook Admin watcher: dedupe sections & auto-load === */
+(function(){
+  var gbTick = null;
+  function dedupeGbAdmin(){
+    try{
+      var lists = document.querySelectorAll('[id="gbAdminList"]');
+      for(var i=1;i<lists.length;i++){ if(lists[i] && lists[i].parentNode){ lists[i].parentNode.removeChild(lists[i]); } }
+      var badges = document.querySelectorAll('[id="gbRemoteBadge"]');
+      for(var j=1;j<badges.length;j++){ if(badges[j] && badges[j].parentNode){ badges[j].parentNode.removeChild(badges[j]); } }
+    }catch(_){}
+  }
+  function updateBadge(){
+    try{
+      var b = document.getElementById('gbRemoteBadge');
+      if(b){ b.textContent = '원격저장: ' + (isRemoteGuest() ? '켜짐' : '꺼짐'); }
+    }catch(_){}
+  }
+  function ensureLoadedOnce(){
+    var cont = document.querySelector('[id="gbAdminList"]');
+    if(!cont) return;
+    if(!cont.getAttribute('data-gb-loaded')){
+      cont.setAttribute('data-gb-loaded','1');
+      if (typeof decorateGbAdmin === 'function') { decorateGbAdmin(); }
+    }
+  }
+  function clearLoadedFlag(){
+    var cont = document.querySelector('[id="gbAdminList"]');
+    if(cont) cont.removeAttribute('data-gb-loaded');
+  }
+  function tick(){
+    var dlg = document.getElementById('dlgAdmin');
+    if(dlg && dlg.open){
+      dedupeGbAdmin();
+      updateBadge();
+      ensureLoadedOnce();
+    }else{
+      clearLoadedFlag();
+    }
+  }
+  if(!gbTick){
+    gbTick = setInterval(tick, 500);
+  }
+})();
 })();</script>
 </body>
 </html>
