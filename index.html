@@ -66,8 +66,7 @@
 <section class="hero" id="hero">
   <div class="container">
     <div class="panel">
-      <div style="font-size:20px;font-weight:800">카테고리를 선택하세요</div>
-      <div class="sub">원하는 항목을 먼저 고르세요. 버튼은 나중에 더 추가할 수 있어요.</div>
+      <div style="font-size:20px;font-weight:800">무엇을 보러 왔느냐</div>
       <div class="grid" id="heroGrid"></div>
     </div>
   </div>
@@ -104,6 +103,7 @@
 <dialog id="dlgReq">
   <div class="head"><strong>신규 요청</strong><button class="btn" id="dlgReqClose">닫기</button></div>
   <div class="body">
+    <input id="reqName" style="width:100%;margin-bottom:8px" placeholder="요청자 이름 (선택)">
     <textarea id="reqText" rows="6" style="width:100%" placeholder="요청 내용을 입력하세요..."></textarea>
     <div style="margin-top:10px"><button class="btn" id="reqSave">등록</button></div>
   </div>
@@ -179,15 +179,13 @@
 
 <script>
 (function(){
-  // --- basic error banner to catch issues ---
-  window.onerror = function(msg, src, line, col, err){
-    try{
-      var b=document.createElement('div'); b.style.cssText='position:fixed;left:10px;bottom:10px;background:#3a0c0c;color:#fff;border:1px solid #ea6; padding:8px 10px;border-radius:8px;z-index:9999';
-      b.textContent='오류: '+msg; document.body.appendChild(b);
-    }catch(e){}
-  };
+  // === Utilities ===
+  function $(id){ return document.getElementById(id); }
+  function copy(t){ if(navigator.clipboard){ navigator.clipboard.writeText(t).then(function(){ toast('복사됨'); }); } }
+  function toast(m){ var el=document.createElement('div'); el.textContent=m; el.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:#141a33;color:#fff;border:1px solid rgba(255,255,255,.2);padding:8px 10px;border-radius:8px;z-index:9999'; document.body.appendChild(el); setTimeout(function(){ document.body.removeChild(el); }, 1200); }
+  function today(){ var d=new Date(); return d.toISOString().slice(0,10); }
 
-  // --- Data ---
+  // === Data ===
   var DEFAULT = {
     people:["민수","지연","수현","태호","루카"],
     categories:[
@@ -197,42 +195,60 @@
       {id:"members",name:"멤버 명단 보기",emoji:"🧑‍🤝‍🧑",type:"members"}
     ],
     profiles:{},
-    avatars:{}
+    avatars:{},
+    membersView: []
   };
   var STORAGE="ARCHIVE_DATA_V11", ADMIN="5193", PINNED=["weight","height","profile","members"];
   var DATA = JSON.parse(JSON.stringify(DEFAULT));
   try{
     var raw = localStorage.getItem(STORAGE);
-    if(raw){ var saved = JSON.parse(raw);
-      // merge people
-      if(saved && saved.people && saved.people.length){ var set={}; DATA.people.concat(saved.people).forEach(function(n){ if(n) set[n]=1; }); DATA.people=Object.keys(set); }
-      // merge categories by id
-      if(saved && saved.categories && saved.categories.length){
-        var byId={}; DATA.categories.forEach(function(c){byId[c.id]=c;});
-        saved.categories.forEach(function(c){ if(c && c.id){ byId[c.id]=Object.assign({scores:{},updated:{}}, byId[c.id]||{}, c); }});
+    if(raw){
+      var saved = JSON.parse(raw);
+      if(saved.people && saved.people.length){
+        var set={}; DEFAULT.people.concat(saved.people).forEach(function(n){ if(n) set[n]=1; }); DATA.people=Object.keys(set);
+      }
+      if(saved.categories && saved.categories.length){
+        var byId={}; DEFAULT.categories.forEach(function(c){byId[c.id]=c;});
+        saved.categories.forEach(function(c){ if(c && c.id){ byId[c.id]=Object.assign({scores:{},updated:{}}, byId[c.id]||{}, c); } });
         DATA.categories = Object.keys(byId).map(function(k){return byId[k];});
       }
-      if(saved && saved.profiles) DATA.profiles = saved.profiles;
-      if(saved && saved.avatars) DATA.avatars = saved.avatars;
+      if(saved.profiles) DATA.profiles = saved.profiles;
+      if(saved.avatars) DATA.avatars = saved.avatars;
+      if(saved.membersView) DATA.membersView = saved.membersView;
     }
   }catch(e){}
 
-  // --- helpers ---
-  function $(id){ return document.getElementById(id); }
-  function copy(t){ if(navigator.clipboard){ navigator.clipboard.writeText(t).then(function(){ toast('복사됨'); }); } }
-  function toast(m){ var el=document.createElement('div'); el.textContent=m; el.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:#141a33;color:#fff;border:1px solid rgba(255,255,255,.2);padding:8px 10px;border-radius:8px;z-index:9999'; document.body.appendChild(el); setTimeout(function(){ document.body.removeChild(el); }, 1200); }
+  function save(){ try{ localStorage.setItem(STORAGE, JSON.stringify(DATA)); }catch(e){} }
   function avatar(name){ return (DATA.avatars && DATA.avatars[name]) ? DATA.avatars[name] : ""; }
   function getCat(id){ for(var i=0;i<DATA.categories.length;i++){ if(DATA.categories[i].id===id) return DATA.categories[i]; } return null; }
   function setURLCat(id){ var u=new URL(location.href); u.searchParams.set('cat', id); history.replaceState({},'',u); }
   function getURLCat(){ var u=new URL(location.href); return u.searchParams.get('cat'); }
 
-  // --- Hero buttons ---
+  function namesFromData(){
+    var set={}, i,c;
+    for(i=0;i<DATA.categories.length;i++){
+      c=DATA.categories[i];
+      if(c.type==='metric'){
+        for(var k in (c.scores||{})){ if(c.scores[k]!=null && c.scores[k] !== '') set[k]=1; }
+        for(var k2 in (c.updated||{})){ if(c.updated[k2]) set[k2]=1; }
+      }
+    }
+    for(var p in (DATA.profiles||{})){ if(DATA.profiles[p] && (DATA.profiles[p].subtitle||DATA.profiles[p].bio||DATA.profiles[p].updated)) set[p]=1; }
+    for(var a in (DATA.avatars||{})){ if(DATA.avatars[a]) set[a]=1; }
+    return Object.keys(set);
+  }
+  function unionPeople(){
+    var set={}; DATA.people.concat(namesFromData()).forEach(function(n){ if(n) set[n]=1; });
+    return Object.keys(set).sort();
+  }
+
+  // === Hero ===
   function renderHero(){
     var order = PINNED.slice();
     DATA.categories.forEach(function(c){ if(order.indexOf(c.id)===-1) order.push(c.id); });
-    var html = "";
+    var html="";
     order.forEach(function(id){
-      var c = getCat(id); if(!c) return;
+      var c=getCat(id); if(!c) return;
       html += '<div class="cat" data-id="'+c.id+'"><div class="emoji">'+(c.emoji||"🏷️")+'</div><div><div style="font-weight:700">'+c.name+(c.unit?(" ("+c.unit+")"):"")+'</div><div class="muted" style="font-size:12px">데이터 보기</div></div></div>';
     });
     $('heroGrid').innerHTML = html;
@@ -241,7 +257,6 @@
     });
   }
 
-  // --- List rendering ---
   function showHero(){ $('hero').style.display='block'; $('page').style.display='none'; $('btnHome').classList.add('hidden'); }
   function showPage(){ $('hero').style.display='none'; $('page').style.display='block'; $('btnHome').classList.remove('hidden'); }
 
@@ -249,47 +264,38 @@
     var catId = getURLCat() || (DATA.categories[0] ? DATA.categories[0].id : 'profile');
     var cat = getCat(catId);
     $('catTitle').textContent = (cat ? cat.name : '항목') + (cat && cat.unit ? (' ('+cat.unit+')') : '');
-    // category selector
     $('selCat').innerHTML = DATA.categories.map(function(c){ return '<option value="'+c.id+'">'+c.name+(c.unit?(' ('+c.unit+')'):'')+' — '+c.type+'</option>'; }).join('');
     $('selCat').value = cat ? cat.id : '';
-    // reset areas
-    $('wrapMembers').classList.add('hidden');
-    $('tbl').style.display='table';
-    // profile
+    $('wrapMembers').classList.add('hidden'); $('tbl').style.display='table';
+
     if(cat && cat.type==='profile'){
       $('wrapSort').style.display='none';
       $('thead').innerHTML = '<tr><th>이름</th></tr>';
-      var names = {}; DATA.people.forEach(function(n){names[n]=1;}); for(var n in DATA.profiles){names[n]=1;}
-      var list = Object.keys(names).sort();
-      $('tbody').innerHTML = list.map(function(name){
+      var names = unionPeople();
+      $('tbody').innerHTML = names.map(function(name){
         var av = avatar(name);
-        return '<tr><td><button class="name btnLink" data-open="'+name+'" style="all:unset;cursor:pointer"><span>'+(av?'<img class="avatar" src="'+av+'">':'')+'</span><span>'+name+'</span></button></td></tr>';
+        return '<tr><td><button class="name" data-open="'+name+'" style="all:unset;cursor:pointer">'+(av?'<img class="avatar" src="'+av+'">':'')+'<span>'+name+'</span></button></td></tr>';
       }).join('');
       Array.prototype.forEach.call(document.querySelectorAll('[data-open]'), function(b){
         b.addEventListener('click', function(){ openProfile(b.getAttribute('data-open')); });
       });
     }
-    // members
     else if(cat && cat.type==='members'){
       $('wrapSort').style.display='none';
       $('tbl').style.display='none';
       $('wrapMembers').classList.remove('hidden');
-      // registered members
-      var set={}, i, c;
-      for(i=0;i<DATA.categories.length;i++){ c=DATA.categories[i]; if(c.type==='metric'){ for(var k in (c.scores||{})){ if(c.scores[k]!=null && c.scores[k] !== '') set[k]=1; } for(var k2 in (c.updated||{})){ if(c.updated[k2]) set[k2]=1; } } }
-      for(var p in DATA.profiles){ if(DATA.profiles[p] && (DATA.profiles[p].subtitle||DATA.profiles[p].bio||DATA.profiles[p].updated)) set[p]=1; }
-      for(var a in DATA.avatars){ if(DATA.avatars[a]) set[a]=1; }
-      var names = Object.keys(set).sort();
-      $('wrapMembers').innerHTML = '<div class="mgrid">'+names.map(function(n){
+      var base = (DATA.membersView && DATA.membersView.length) ? DATA.membersView.slice() :
+                 (DATA.people && DATA.people.length ? DATA.people.slice() : unionPeople());
+      base.sort();
+      $('wrapMembers').innerHTML = '<div class="mgrid">' + base.map(function(n){
         var av = avatar(n);
         return '<div class="mcard">'+(av?'<img class="avatar" style="width:40px;height:40px;border-radius:12px" src="'+av+'">':'')+'<div>'+n+'</div></div>';
-      }).join('')+'</div>';
+      }).join('') + '</div>';
     }
-    // metric
     else{
       $('wrapSort').style.display='';
       $('thead').innerHTML = '<tr><th>순위</th><th>이름</th><th>값</th><th>업데이트</th></tr>';
-      var rows = DATA.people.map(function(name){
+      var rows = unionPeople().map(function(name){
         var v = (cat && cat.scores) ? cat.scores[name] : null;
         return {name:name,value:(v!=null?Number(v):null),updated:(cat && cat.updated ? cat.updated[name] : '')};
       });
@@ -306,11 +312,13 @@
         return '<tr><td>'+medal+'</td><td><span class="name">'+(av?'<img class="avatar" src="'+av+'">':'')+'<span>'+r.name+'</span></span></td><td>'+v+'</td><td class="muted">'+(r.updated||'-')+'</td></tr>';
       }).join('');
     }
+    renderReqs(catId);
+    save();
   }
 
   function openCat(id){ setURLCat(id); showPage(); renderList(); }
 
-  // profile overlay
+  // Profile overlay
   function openProfile(name){
     var p = (DATA.profiles && DATA.profiles[name]) ? DATA.profiles[name] : {};
     $('ovName').textContent = name;
@@ -321,7 +329,7 @@
   $('ovClose').addEventListener('click', function(){ $('ov').classList.remove('show'); });
   $('ov').addEventListener('click', function(e){ if(e.target.id==='ov') $('ov').classList.remove('show'); });
 
-  // updates
+  // Updates
   function parseDate(s){ if(!s) return null; var t=Date.parse(s); if(!isNaN(t)) return new Date(t); s=s.replace(/[./]/g,'-'); t=Date.parse(s); return isNaN(t)?null:new Date(t); }
   function collectUpdates(){
     var items=[];
@@ -337,24 +345,43 @@
     return items;
   }
 
-  // admin area
+  // Requests per category
+  function reqKey(catId){ return 'req_list_' + (catId||'default'); }
+  function getCatId(){ return getURLCat() || (DATA.categories[0] ? DATA.categories[0].id : 'profile'); }
+  function loadReqs(catId){ try{ return JSON.parse(localStorage.getItem(reqKey(catId))||'[]'); }catch(e){ return []; } }
+  function saveReqs(catId, list){ localStorage.setItem(reqKey(catId), JSON.stringify(list)); }
+  function renderReqs(catId){
+    var reqs = loadReqs(catId);
+    $('reqList').innerHTML = reqs.map(function(r){
+      return '<div style="border:1px solid rgba(255,255,255,.12);background:#12162b;border-radius:10px;padding:8px 10px;margin-bottom:8px"><div><strong>'+r.name+'</strong></div><div>'+r.text+'</div><div class="muted" style="font-size:12px">'+r.date+'</div></div>';
+    }).join('');
+  }
+  $('btnReqOpen').addEventListener('click', function(){
+    $('reqText').value=''; $('reqName').value='';
+    $('dlgReq').showModal();
+  });
+  $('dlgReqClose').addEventListener('click', function(){ $('dlgReq').close(); });
+  $('reqSave').addEventListener('click', function(){
+    var name = $('reqName').value.trim() || '익명';
+    var text = $('reqText').value.trim(); if(!text) return;
+    var cid = getCatId();
+    var list = loadReqs(cid); list.unshift({name:name,text:text,date:new Date().toLocaleString()}); saveReqs(cid, list);
+    $('dlgReq').close(); renderReqs(cid);
+  });
+
+  // Admin auth
   function isAdmin(){ return sessionStorage.getItem('admin')==='1'; }
   function setAdmin(v){ if(v){ sessionStorage.setItem('admin','1'); $('badgeAdmin').classList.remove('hidden'); } else { sessionStorage.removeItem('admin'); $('badgeAdmin').classList.add('hidden'); } }
-  function save(){ try{ localStorage.setItem(STORAGE, JSON.stringify(DATA)); }catch(e){} }
 
+  // People table (union view)
   function fillPeople(){
-    // registered members only
-    var set={}, i,c;
-    for(i=0;i<DATA.categories.length;i++){ c=DATA.categories[i]; if(c.type==='metric'){ for(var k in (c.scores||{})){ if(c.scores[k]!=null && c.scores[k]!=='') set[k]=1; } for(var k2 in (c.updated||{})){ if(c.updated[k2]) set[k2]=1; } } }
-    for(var p in DATA.profiles){ if(DATA.profiles[p] && (DATA.profiles[p].subtitle||DATA.profiles[p].bio||DATA.profiles[p].updated)) set[p]=1; }
-    for(var a in DATA.avatars){ if(DATA.avatars[a]) set[a]=1; }
-    var list = Object.keys(set).sort();
+    var list = unionPeople();
     $('peopleTable').innerHTML = list.map(function(n){
       var av = avatar(n);
       return '<tr><td>'+(av?'<img class="avatar" src="'+av+'">':'')+'</td><td>'+n+'</td><td><input type="file" accept="image/*" data-up="'+n+'"></td><td><button class="btn" data-clr="'+n+'">제거</button></td><td><button class="btn" data-del="'+n+'">삭제</button></td></tr>';
     }).join('');
     Array.prototype.forEach.call(document.querySelectorAll('input[type="file"][data-up]'), function(inp){
-      inp.addEventListener('change', function(e){
+      inp.addEventListener('change', function(){
         var f = inp.files && inp.files[0]; if(!f) return;
         var r = new FileReader(); r.onload = function(){ if(!DATA.avatars) DATA.avatars={}; DATA.avatars[inp.getAttribute('data-up')] = r.result; save(); fillPeople(); renderList(); };
         r.readAsDataURL(f);
@@ -365,42 +392,60 @@
     });
     Array.prototype.forEach.call(document.querySelectorAll('button[data-del]'), function(b){
       b.addEventListener('click', function(){
-        var name=b.getAttribute('data-del'); if(!confirm(name+' 삭제?')) return;
+        var name=b.getAttribute('data-del'); if(!confirm(name+' 을(를) 완전히 삭제할까요? 모든 카테고리 데이터가 제거됩니다.')) return;
         DATA.people = DATA.people.filter(function(x){return x!==name;});
         DATA.categories.forEach(function(cat){ if(cat.type==='metric'){ if(cat.scores) delete cat.scores[name]; if(cat.updated) delete cat.updated[name]; } });
         if(DATA.profiles) delete DATA.profiles[name];
         if(DATA.avatars) delete DATA.avatars[name];
+        if(Array.isArray(DATA.membersView)) DATA.membersView = DATA.membersView.filter(function(x){return x!==name;});
         save(); fillPeople(); renderList();
       });
     });
   }
+  $('addPerson').addEventListener('click', function(){
+    var name=$('newPerson').value.trim(); if(!name) return;
+    if(DATA.people.indexOf(name)===-1) DATA.people.push(name);
+    $('newPerson').value=''; save(); fillPeople(); renderList();
+  });
+
   function fillCats(){
     $('catsTable').innerHTML = DATA.categories.map(function(c){
       return '<tr><td>'+c.id+'</td><td>'+c.name+'</td><td>'+c.type+'</td><td>'+(c.unit||'')+'</td><td>'+(c.emoji||'')+'</td><td><button class="btn" data-rmcat="'+c.id+'">삭제</button></td></tr>';
     }).join('');
     Array.prototype.forEach.call(document.querySelectorAll('[data-rmcat]'), function(b){
       b.addEventListener('click', function(){
-        var id=b.getAttribute('data-rmcat'); if(!confirm(id+' 카테고리 삭제?')) return;
+        var id=b.getAttribute('data-rmcat'); if(!confirm(id+' 카테고리를 삭제할까요?')) return;
         DATA.categories = DATA.categories.filter(function(x){ return x.id!==id; });
         save(); fillCats(); renderHero(); renderList();
       });
     });
-    // editor select
     $('editCat').innerHTML = DATA.categories.map(function(c){ return '<option value="'+c.id+'">'+c.name+(c.unit?(' ('+c.unit+')'):'')+' — '+c.type+'</option>'; }).join('');
     if(!getCat($('editCat').value) && DATA.categories[0]) $('editCat').value = DATA.categories[0].id;
     fillEditor($('editCat').value);
   }
+  $('addCat').addEventListener('click', function(){
+    var id=$('catId').value.trim(), name=$('catName').value.trim(), type=$('catType').value, unit=$('catUnit').value.trim(), emoji=$('catEmoji').value.trim();
+    if(!id||!name) return toast('id/이름 입력');
+    if(getCat(id)) return toast('이미 존재');
+    var cat={id:id,name:name,type:type,emoji:emoji};
+    if(type==='metric'){ cat.unit=unit; cat.scores={}; cat.updated={}; }
+    DATA.categories.push(cat);
+    $('catId').value='';$('catName').value='';$('catUnit').value='';$('catEmoji').value='';
+    save(); fillCats(); renderHero(); renderList(); toast('추가됨');
+  });
+  $('editCat').addEventListener('change', function(){ fillEditor(this.value); });
+  $('editRefresh').addEventListener('click', function(){ fillEditor($('editCat').value); });
+
   function fillEditor(catId){
     var c = getCat(catId); if(!c){ $('editArea').innerHTML='<div class="muted">카테고리를 선택</div>'; return; }
-    // profile
     if(c.type==='profile'){
-      var rows = DATA.people.map(function(name){
+      var rows = unionPeople().map(function(name){
         var p = (DATA.profiles && DATA.profiles[name]) ? DATA.profiles[name] : {};
         return '<tr><td>'+name+'</td><td><input data-n="'+name+'" data-k="subtitle" value="'+(p.subtitle?String(p.subtitle).replace(/"/g,'&quot;'):'')+'"></td><td><input data-n="'+name+'" data-k="bio" value="'+(p.bio?String(p.bio).replace(/"/g,'&quot;'):'')+'"></td><td><input data-n="'+name+'" data-k="updated" placeholder="YYYY-MM-DD" value="'+(p.updated||'')+'"></td></tr>';
       }).join('');
       $('editArea').innerHTML = '<table class="table-sm"><thead><tr><th>이름</th><th>부제</th><th>바이오</th><th>업데이트</th></tr></thead><tbody>'+rows+'</tbody></table><div style="margin-top:8px"><button class="btn" id="saveProfile">저장</button></div>';
       $('saveProfile').onclick=function(){
-        DATA.people.forEach(function(name){
+        unionPeople().forEach(function(name){
           var q=function(k){ return document.querySelector('input[data-n="'+name+'"][data-k="'+k+'"]'); };
           var sub=q('subtitle').value.trim(), bio=q('bio').value.trim(), upd=q('updated').value.trim();
           if(!DATA.profiles) DATA.profiles={}; if(!DATA.profiles[name]) DATA.profiles[name]={};
@@ -409,69 +454,105 @@
         });
         save(); renderList(); toast('저장됨');
       };
-    } else if(c.type==='members'){
-      $('editArea').innerHTML = '<div class="muted">멤버 명단은 자동 생성됩니다.</div>';
-    } else { // metric
-      var rows = DATA.people.map(function(name){
+    }
+    else if(c.type==='members'){
+      var all = unionPeople();
+      var set = {}; (DATA.membersView||[]).forEach(function(n){ set[n]=1; });
+      var rows = all.map(function(n){
+        var checked = set[n] ? 'checked' : '';
+        return '<label style="display:flex;align-items:center;gap:8px;margin:4px 8px 0 0"><input type="checkbox" class="cbMV" value="'+n+'" '+checked+'> '+n+'</label>';
+      }).join('');
+      $('editArea').innerHTML = '<div style="display:flex;flex-wrap:wrap">'+rows+'</div><div style="margin-top:8px"><button class="btn" id="saveMV">저장</button> <span class="muted" style="margin-left:6px">체크된 멤버만 공개 목록에 표시됩니다. 미선택이어도 사람 관리에는 남습니다.</span></div>';
+      $('saveMV').onclick=function(){
+        var picks=[]; Array.prototype.forEach.call(document.querySelectorAll('.cbMV'), function(cb){ if(cb.checked) picks.push(cb.value); });
+        DATA.membersView = picks;
+        save(); renderList(); toast('저장됨');
+      };
+    }
+    else{
+      var rows = unionPeople().map(function(name){
         var v = c.scores? (c.scores[name]!=null?c.scores[name]:'') : '';
         var u = c.updated? (c.updated[name]||'') : '';
         return '<tr><td>'+name+'</td><td><input data-n="'+name+'" data-k="value" value="'+v+'"></td><td><input data-n="'+name+'" data-k="updated" placeholder="YYYY-MM-DD" value="'+u+'"></td></tr>';
       }).join('');
-      $('editArea').innerHTML = '<table class="table-sm"><thead><tr><th>이름</th><th>값'+(c.unit?(' ('+c.unit+')'):'')+'</th><th>업데이트</th></tr></thead><tbody>'+rows+'</tbody></table><div style="margin-top:8px"><button class="btn" id="saveMetric">저장</button></div>';
-      $('saveMetric').onclick=function(){
+      var inCatSet={}; for(var k in (c.scores||{})){ if(c.scores[k]!=null) inCatSet[k]=1; }
+      var candidates = DATA.people.filter(function(n){ return !inCatSet[n]; });
+      var present = Object.keys(inCatSet);
+      $('editArea').innerHTML = ''
+        + '<div class="row" style="gap:6px;margin-bottom:8px">'
+        + '  <select id="candFromPeople">'+ candidates.map(function(n){ return '<option value="'+n+'">'+n+'</option>'; }).join('') + '</select>'
+        + '  <input id="candValue" placeholder="값 ('+(c.unit||'')+')">'
+        + '  <button class="btn" id="btnAddFromPeople">추가</button>'
+        + '  <span class="muted">사람 관리 목록에서 선택해 추가</span>'
+        + '</div>'
+        + '<div class="row" style="gap:6px;margin-bottom:8px">'
+        + '  <input id="manualName" placeholder="이름">'
+        + '  <input id="manualValue" placeholder="값 ('+(c.unit||'')+')">'
+        + '  <button class="btn" id="btnAddManual">직접 추가</button>'
+        + '  <span class="muted">사람 관리에 없어도 이 카테고리에만 추가</span>'
+        + '</div>'
+        + '<div class="row" style="gap:6px;margin-bottom:8px">'
+        + '  <select id="removeInCat">'+ present.map(function(n){ return '<option value="'+n+'">'+n+'</option>'; }).join('') + '</select>'
+        + '  <button class="btn" id="btnRemoveInCat">카테고리에서 삭제</button>'
+        + '  <span class="muted">사람 관리에는 남겨둠</span>'
+        + '</div>'
+        + '<table class="table-sm"><thead><tr><th>이름</th><th>값'+(c.unit?(' ('+c.unit+')'):'')+'</th><th>업데이트</th></tr></thead><tbody>'+rows+'</tbody></table>'
+        + '<div style="margin-top:8px"><button class="btn" id="saveMetric">저장</button></div>';
+
+      document.getElementById('btnAddFromPeople').onclick=function(){
+        var nm=document.getElementById('candFromPeople').value; var val=document.getElementById('candValue').value.trim(); if(nm==='') return;
         if(!c.scores) c.scores={}; if(!c.updated) c.updated={};
-        DATA.people.forEach(function(name){
+        c.scores[nm] = (val===''? null : Number(val)); c.updated[nm] = today();
+        save(); fillEditor(catId); renderList(); toast('추가됨');
+      };
+      document.getElementById('btnAddManual').onclick=function(){
+        var nm=document.getElementById('manualName').value.trim(); var val=document.getElementById('manualValue').value.trim(); if(!nm) return;
+        if(!c.scores) c.scores={}; if(!c.updated) c.updated={};
+        c.scores[nm] = (val===''? null : Number(val)); c.updated[nm] = today();
+        document.getElementById('manualName').value=''; document.getElementById('manualValue').value='';
+        save(); fillEditor(catId); renderList(); toast('추가됨');
+      };
+      document.getElementById('btnRemoveInCat').onclick=function(){
+        var nm=document.getElementById('removeInCat').value; if(!nm) return;
+        if(c.scores) delete c.scores[nm]; if(c.updated) delete c.updated[nm];
+        save(); fillEditor(catId); renderList(); toast('삭제됨');
+      };
+
+      document.getElementById('saveMetric').onclick=function(){
+        if(!c.scores) c.scores={}; if(!c.updated) c.updated={};
+        unionPeople().forEach(function(name){
           var q=function(k){ return document.querySelector('input[data-n="'+name+'"][data-k="'+k+'"]'); };
+          if(!q('value')) return;
           var v=q('value').value.trim(); var u=q('updated').value.trim();
-          c.scores[name] = (v===''? null : Number(v));
-          c.updated[name] = u || '';
+          if(v===''){ delete c.scores[name]; } else { c.scores[name]=Number(v); }
+          if(u===''){ delete c.updated[name]; } else { c.updated[name]=u; }
         });
         save(); renderList(); toast('저장됨');
       };
     }
   }
 
-  // --- events ---
-  $('selCat').addEventListener('change', function(){ openCat(this.value); });
-  $('selSort').addEventListener('change', renderList);
-  $('btnHome').addEventListener('click', function(){ var u=new URL(location.href); u.searchParams.delete('cat'); history.replaceState({},'',u); showHero(); });
-  $('btnCopy').addEventListener('click', function(){ copy(location.href); });
-  $('btnUpdates').addEventListener('click', function(){
+  // Events
+  document.getElementById('selCat').addEventListener('change', function(){ openCat(this.value); });
+  document.getElementById('selSort').addEventListener('change', renderList);
+  document.getElementById('btnHome').addEventListener('click', function(){ var u=new URL(location.href); u.searchParams.delete('cat'); history.replaceState({},'',u); showHero(); });
+  document.getElementById('btnCopy').addEventListener('click', function(){ copy(location.href); });
+  document.getElementById('btnUpdates').addEventListener('click', function(){
     var items = collectUpdates();
-    $('updList').innerHTML = items.length? items.map(function(it){ return '<div style="border:1px solid var(--line);background:#12162b;border-radius:10px;padding:8px 10px;margin-bottom:8px"><div><strong>'+it.label+'</strong></div><div class="muted" style="font-size:12px">'+it.date.toISOString().slice(0,10)+'</div><div>'+it.detail+'</div></div>'; }).join('') : '<div class="muted">최근 업데이트가 없습니다.</div>';
-    $('dlgUpd').showModal();
+    document.getElementById('updList').innerHTML = items.length? items.map(function(it){ return '<div style="border:1px solid rgba(255,255,255,.12);background:#12162b;border-radius:10px;padding:8px 10px;margin-bottom:8px"><div><strong>'+it.label+'</strong></div><div class="muted" style="font-size:12px">'+it.date.toISOString().slice(0,10)+'</div><div>'+it.detail+'</div></div>'; }).join('') : '<div class="muted">최근 업데이트가 없습니다.</div>';
+    document.getElementById('dlgUpd').showModal();
   });
-  $('dlgUpdClose').addEventListener('click', function(){ $('dlgUpd').close(); });
+  document.getElementById('dlgUpdClose').addEventListener('click', function(){ document.getElementById('dlgUpd').close(); });
 
-  $('btnReqOpen').addEventListener('click', function(){ $('reqText').value=''; $('dlgReq').showModal(); });
-  $('dlgReqClose').addEventListener('click', function(){ $('dlgReq').close(); });
-  var REQ="req_list"; var reqs = []; try{ reqs = JSON.parse(localStorage.getItem(REQ) || "[]"); }catch(e){}
-  function renderReqs(){ $('reqList').innerHTML = reqs.map(function(r){ return '<div style="border:1px solid var(--line);background:#12162b;border-radius:10px;padding:8px 10px;margin-bottom:8px">'+r.text+'<div class="muted" style="font-size:12px">'+r.date+'</div></div>'; }).join(''); }
-  renderReqs();
-  $('reqSave').addEventListener('click', function(){ var v=$('reqText').value.trim(); if(!v) return; reqs.unshift({text:v,date:new Date().toLocaleString()}); localStorage.setItem(REQ, JSON.stringify(reqs)); $('dlgReq').close(); renderReqs(); });
+  function openAdmin(){ if(!isAdmin()){ document.getElementById('adminPw').value=''; document.getElementById('dlgAdminPw').showModal(); } else { fillPeople(); fillCats(); document.getElementById('dlgAdmin').showModal(); } }
+  document.getElementById('btnAdmin').addEventListener('click', openAdmin);
+  document.getElementById('dlgAdminPwClose').addEventListener('click', function(){ document.getElementById('dlgAdminPw').close(); });
+  document.getElementById('adminPwOk').addEventListener('click', function(){ if(document.getElementById('adminPw').value===ADMIN){ setAdmin(true); document.getElementById('dlgAdminPw').close(); fillPeople(); fillCats(); document.getElementById('dlgAdmin').showModal(); } else { toast('패스워드 오류'); } });
+  document.getElementById('dlgAdminClose').addEventListener('click', function(){ document.getElementById('dlgAdmin').close(); });
+  document.getElementById('adminLogout').addEventListener('click', function(){ setAdmin(false); document.getElementById('dlgAdmin').close(); });
 
-  // admin
-  $('btnAdmin').addEventListener('click', function(){ if(!isAdmin()){ $('adminPw').value=''; $('dlgAdminPw').showModal(); } else { fillPeople(); fillCats(); $('dlgAdmin').showModal(); } });
-  $('dlgAdminPwClose').addEventListener('click', function(){ $('dlgAdminPw').close(); });
-  $('adminPwOk').addEventListener('click', function(){ if($('adminPw').value===ADMIN){ setAdmin(true); $('dlgAdminPw').close(); fillPeople(); fillCats(); $('dlgAdmin').showModal(); } else { toast('패스워드 오류'); } });
-  $('dlgAdminClose').addEventListener('click', function(){ $('dlgAdmin').close(); });
-  $('adminLogout').addEventListener('click', function(){ setAdmin(false); $('dlgAdmin').close(); });
-
-  $('addPerson').addEventListener('click', function(){ var name=$('newPerson').value.trim(); if(!name) return; if(DATA.people.indexOf(name)===-1) DATA.people.push(name); $('newPerson').value=''; save(); fillPeople(); renderList(); });
-  $('addCat').addEventListener('click', function(){
-    var id=$('catId').value.trim(), name=$('catName').value.trim(), type=$('catType').value, unit=$('catUnit').value.trim(), emoji=$('catEmoji').value.trim();
-    if(!id||!name) return toast('id/이름 입력');
-    if(getCat(id)) return toast('이미 존재');
-    var cat={id:id,name:name,type:type,emoji:emoji};
-    if(type==='metric'){ cat.unit=unit; cat.scores={}; cat.updated={}; }
-    DATA.categories.push(cat); $('catId').value='';$('catName').value='';$('catUnit').value='';$('catEmoji').value='';
-    save(); fillCats(); renderHero(); renderList(); toast('추가됨');
-  });
-  $('editCat').addEventListener('change', function(){ fillEditor(this.value); });
-  $('editRefresh').addEventListener('click', function(){ fillEditor($('editCat').value); });
-
-  // init
-  if(sessionStorage.getItem('admin')==='1') $('badgeAdmin').classList.remove('hidden');
+  // Init
+  if(sessionStorage.getItem('admin')==='1') document.getElementById('badgeAdmin').classList.remove('hidden');
   renderHero();
   var cur = getURLCat(); if(cur){ showPage(); renderList(); } else { showHero(); }
 
