@@ -186,7 +186,16 @@
     </div>
     <div id="editArea"></div>
 
+    
+    <div style="font-weight:700;margin:14px 0 6px">신규 요청 관리 <span id="reqRemoteBadge" class="badge" style="margin-left:6px">원격저장: 꺼짐</span></div>
+    <div class="row" style="gap:6px;margin-bottom:8px">
+      <select id="reqCatSel"></select>
+      <button class="btn" id="reqDelAll">선택 카테고리 전체 삭제</button>
+    </div>
+    <div id="reqAdminList" style="max-height:260px;overflow:auto"></div>
+
     <div style="font-weight:700;margin:14px 0 6px">백업/복구</div>
+    
     <div class="row" style="gap:6px;margin-bottom:8px">
       <button class="btn" id="btnExport">내보내기</button>
       <button class="btn" id="btnImport">가져오기</button>
@@ -210,30 +219,82 @@
   function copy(t){ if(navigator.clipboard){ navigator.clipboard.writeText(t).then(function(){ toast('복사됨'); }); } }
   function toast(m){ var el=document.createElement('div'); el.textContent=m; el.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:#141a33;color:#fff;border:1px solid rgba(255,255,255,.2);padding:8px 10px;border-radius:8px;z-index:9999'; document.body.appendChild(el); setTimeout(function(){ document.body.removeChild(el); }, 1200); }
   function today(){ var d=new Date(); return d.toISOString().slice(0,10); }
+  // ===== Remote storage (OFF by default) =====
+  var REMOTE = {
+    url: 'https://script.google.com/macros/s/AKfycbwRMwidF-mlWzzz5HLiCHDm70DgXWUBA4BThPTz_ChBdzPbWkGZ1DW6nPYCvPMopcggzA/exec',                 // e.g. 'https://script.google.com/macros/s/AKfycb.../exec'
+    enableGuestbook: true,  // set true to use remote guestbook
+    enableRequests: true,   // set true to use remote per-category requests
+    headers: {}              // e.g. {'X-API-KEY':'...'} if needed
+  };
+  function isRemoteGuest(){ return REMOTE && REMOTE.enableGuestbook && REMOTE.url; }
+  function isRemoteReq(){ return REMOTE && REMOTE.enableRequests && REMOTE.url; }
+  async function apiGet(params){
+    var url = REMOTE.url + '?' + new URLSearchParams(params).toString();
+    var res = await fetch(url, {method:'GET', mode:'cors'});
+    if(!res.ok) throw new Error('GET '+res.status);
+    return await res.json();
+  }
+  async function apiPost(payload){
+    var res = await fetch(REMOTE.url, {
+      method:'POST', mode:'cors',
+      headers:Object.assign({'Content-Type':'application/json'}, REMOTE.headers||{}),
+      body:JSON.stringify(payload)
+    });
+    if(!res.ok) throw new Error('POST '+res.status);
+    return await res.json();
+  }
+
   // guestbook helpers
   var GUEST_KEY = "guestbook_v1";
   function gbLoad(){ try{ return JSON.parse(localStorage.getItem(GUEST_KEY)||"[]"); }catch(e){ return []; } }
   function gbSave(arr){ localStorage.setItem(GUEST_KEY, JSON.stringify(arr)); }
   function esc(s){ return (s||"").replace(/[&<>]/g,function(ch){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[ch]; }); }
   function renderGuest(){
-    var list = gbLoad();
     var wrap = document.getElementById('gbList');
+    if(!wrap) return;
+    if(isRemoteGuest()){
+      wrap.innerHTML = '<div class="muted">불러오는 중...</div>';
+      apiGet({type:'guestbook', action:'list'}).then(function(data){
+        var list = Array.isArray(data.items)? data.items : [];
+        document.getElementById('gbCount').textContent = list.length ? (list.length + '개 글') : '';
+        var html = list.map(function(it){
+          return '<div class="gb-item">'
+               +   '<div class="gb-avatar" title="'+ (it.name||'익명') +'"></div>'
+               +   '<div class="gb-bubble">'
+               +     '<div class="gb-meta"><strong>'+ (it.name||'익명') +'</strong><span>'+ (it.time||'') +'</span></div>'
+               +     '<div class="gb-msg">'+ (it.text||'') +'</div>'
+               +   '</div>'
+               + '</div>';
+        }).join('');
+        wrap.innerHTML = html || '<div class="muted">아직 글이 없습니다. 첫 글을 남겨보세요!</div>';
+        wrap.scrollTop = wrap.scrollHeight;
+      }).catch(function(){ wrap.innerHTML = '<div class="muted">불러오기 실패</div>'; });
+      return;
+    }
+    var list = gbLoad();
     document.getElementById('gbCount').textContent = list.length ? (list.length + '개 글') : '';
-    var html = '';
+    var htmlStr = '';
     for(var i=0;i<list.length;i++){
       var it = list[i];
-      var initials = esc((it.name||'').trim().slice(0,1)||'익');
-      html += '<div class="gb-item">'
-           + '<div class="gb-avatar" title="'+esc(it.name||'익명')+'"></div>'
-           + '<div class="gb-bubble">'
-           +   '<div class="gb-meta"><strong>'+esc(it.name||'익명')+'</strong><span>'+esc(it.time||'')+'</span></div>'
-           +   '<div class="gb-msg">'+esc(it.text||'')+'</div>'
-           + '</div></div>';
+      htmlStr += '<div class="gb-item">'
+              +   '<div class="gb-avatar" title="'+(it.name||'익명')+'"></div>'
+              +   '<div class="gb-bubble">'
+              +     '<div class="gb-meta"><strong>'+(it.name||'익명')+'</strong><span>'+ (it.time||'') +'</span></div>'
+              +     '<div class="gb-msg">'+(it.text||'')+'</div>'
+              +   '</div>'
+              + '</div>';
     }
-    wrap.innerHTML = html || '<div class="muted">아직 글이 없습니다. 첫 글을 남겨보세요!</div>';
+    wrap.innerHTML = htmlStr || '<div class="muted">아직 글이 없습니다. 첫 글을 남겨보세요!</div>';
     wrap.scrollTop = wrap.scrollHeight;
   }
+
   function gbAdd(name, text){
+    if(isRemoteGuest()){
+      apiPost({type:'guestbook', action:'add', name:name||'익명', text:text||''})
+        .then(function(){ renderGuest(); })
+        .catch(function(){ toast('원격 저장 실패'); });
+      return;
+    }
     var arr = gbLoad();
     arr.push({name:name||'익명', text:text||'', time:new Date().toLocaleString()});
     gbSave(arr);
@@ -415,9 +476,41 @@
   function getCatId(){ return getURLCat() || (DATA.categories[0] ? DATA.categories[0].id : 'profile'); }
   function loadReqs(catId){ try{ return JSON.parse(localStorage.getItem(reqKey(catId))||'[]'); }catch(e){ return []; } }
   function saveReqs(catId, list){ localStorage.setItem(reqKey(catId), JSON.stringify(list)); }
+  // --- Admin: Requests management ---
+  function adminFillReqCats(){
+    var selEl = document.getElementById('reqCatSel');
+    if(!selEl) return;
+    var opts = DATA.categories.map(function(c){ return '<option value="'+c.id+'">'+c.name+'</option>'; }).join('');
+    selEl.innerHTML = opts;
+  }
+  function adminRenderReqs(){
+    var sel = document.getElementById('reqCatSel'); if(!sel) return;
+    var cid = sel.value || (DATA.categories[0] ? DATA.categories[0].id : 'profile');
+    var wrap = document.getElementById('reqAdminList'); if(!wrap) return;
+    if(isRemoteReq()){
+      wrap.innerHTML = '<div class="muted">불러오는 중...</div>';
+      apiGet({type:'requests', action:'list', category:cid}).then(function(data){
+        var list = Array.isArray(data.items)? data.items : [];
+        if(!list.length){ wrap.innerHTML='<div class="muted">요청 없음</div>'; return; }
   function renderReqs(catId){
+    var wrap = document.getElementById('reqList');
+    if(!wrap) return;
+    if(isRemoteReq()){
+      wrap.innerHTML = '<div class="muted">불러오는 중...</div>';
+      apiGet({type:'requests', action:'list', category:catId}).then(function(data){
+        var items = Array.isArray(data.items) ? data.items : [];
+        wrap.innerHTML = items.map(function(r){
+          return '<div style="border:1px solid rgba(255,255,255,.12);background:#12162b;border-radius:10px;padding:8px 10px;margin-bottom:8px">'
+               +   '<div><strong>'+ (r.name||'익명') +'</strong></div>'
+               +   '<div>'+ (r.text||'') +'</div>'
+               +   '<div class="muted" style="font-size:12px">'+ (r.time||'') +'</div>'
+               + '</div>';
+        }).join('') || '<div class="muted">요청 없음</div>';
+      }).catch(function(){ wrap.innerHTML = '<div class="muted">불러오기 실패</div>'; });
+      return;
+    }
     var reqs = loadReqs(catId);
-    $('reqList').innerHTML = reqs.map(function(r){
+    wrap.innerHTML = reqs.map(function(r){
       return '<div style="border:1px solid rgba(255,255,255,.12);background:#12162b;border-radius:10px;padding:8px 10px;margin-bottom:8px"><div><strong>'+r.name+'</strong></div><div>'+r.text+'</div><div class="muted" style="font-size:12px">'+r.date+'</div></div>';
     }).join('');
   }
@@ -430,8 +523,12 @@
     var name = $('reqName').value.trim() || '익명';
     var text = $('reqText').value.trim(); if(!text) return;
     var cid = getCatId();
-    var list = loadReqs(cid); list.unshift({name:name,text:text,date:new Date().toLocaleString()}); saveReqs(cid, list);
-    $('dlgReq').close(); renderReqs(cid);
+    if(isRemoteReq()){
+      apiPost({type:'requests', action:'add', category:cid, name:name, text:text}).then(function(){ $('dlgReq').close(); renderReqs(cid); }).catch(function(){ toast('원격 저장 실패'); });
+    } else {
+      var list = loadReqs(cid); list.unshift({name:name,text:text,date:new Date().toLocaleString()}); saveReqs(cid, list);
+      $('dlgReq').close(); renderReqs(cid);
+    }
   });
 
   // Admin auth
@@ -498,7 +595,7 @@
     $('catId').value='';$('catName').value='';$('catUnit').value='';$('catEmoji').value='';
     save(); fillCats(); renderHero(); renderList(); toast('추가됨');
   });
-  $('editCat').addEventListener('change', function(){ fillEditor(this.value); });
+  $('editCat').addEventListener('change', function(){ fillEditor(this.value); }); adminFillReqCats(); adminRenderReqs();
   $('editRefresh').addEventListener('click', function(){ fillEditor($('editCat').value); });
 
   function fillEditor(catId){
@@ -615,6 +712,8 @@
   document.getElementById('adminPwOk').addEventListener('click', function(){ if(document.getElementById('adminPw').value===ADMIN){ setAdmin(true); document.getElementById('dlgAdminPw').close(); fillPeople(); fillCats(); document.getElementById('dlgAdmin').showModal(); } else { toast('패스워드 오류'); } });
   document.getElementById('dlgAdminClose').addEventListener('click', function(){ document.getElementById('dlgAdmin').close(); });
   document.getElementById('adminLogout').addEventListener('click', function(){ setAdmin(false); document.getElementById('dlgAdmin').close(); });
+  document.addEventListener('change', function(e){ if(e.target && e.target.id==='reqCatSel'){ adminRenderReqs(); } });
+  document.addEventListener('click', function(e){ if(e.target && e.target.id==='reqDelAll'){ var sel=document.getElementById('reqCatSel'); if(!sel) return; var cid=sel.value; if(!cid) return; if(!confirm('정말로 이 카테고리의 요청을 모두 삭제할까요?')) return; if(isRemoteReq()){ apiPost({type:'requests', action:'delete_all', category:cid}).then(function(){ adminRenderReqs(); if(getURLCat()===cid){ renderReqs(cid); } }).catch(function(){ toast('원격 전체 삭제 실패'); }); } else { saveReqs(cid, []); adminRenderReqs(); if(getURLCat()===cid){ renderReqs(cid); } } } });
 
   // Init
   if(sessionStorage.getItem('admin')==='1') document.getElementById('badgeAdmin').classList.remove('hidden');
@@ -637,6 +736,23 @@
     });
   }
   renderGuest();
+
+  window.addEventListener('error', function(ev){
+    try{
+      var el=document.createElement('div');
+      el.textContent='오류: '+(ev.message||'')+' @'+(ev.filename||'')+':'+(ev.lineno||''); 
+      el.style.cssText='position:fixed;left:12px;bottom:12px;background:#521313;color:#fff;border:1px solid #ff6b6b;padding:8px 10px;border-radius:8px;z-index:10000';
+      document.body.appendChild(el); setTimeout(function(){ el.remove(); }, 6000);
+    }catch(e){}
+  });
+  window.addEventListener('unhandledrejection', function(ev){
+    try{
+      var el=document.createElement('div');
+      el.textContent='오류: '+(ev.reason && (ev.reason.message||ev.reason))+' (promise)';
+      el.style.cssText='position:fixed;left:12px;bottom:12px;background:#521313;color:#fff;border:1px solid #ff6b6b;padding:8px 10px;border-radius:8px;z-index:10000';
+      document.body.appendChild(el); setTimeout(function(){ el.remove(); }, 6000);
+    }catch(e){}
+  });
 })();</script>
 </body>
 </html>
